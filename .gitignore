@@ -47,4 +47,4 @@ app.*.map.json
 .env
 AI_rules.md
 # Bỏ qua cả thư mục
-ui sample
+ui sample/
