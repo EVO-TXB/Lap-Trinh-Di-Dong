@@ -6,12 +6,12 @@ import 'core/constants/app_colors.dart';
 import 'features/xac_thuc/providers/auth_controller.dart';
 import 'features/xac_thuc/repositories/auth_repository_impl.dart';
 import 'features/xac_thuc/screens/dang_nhap_screen.dart';
-import 'features/xac_thuc/screens/dang_phat_trien_screen.dart';
+import 'features/cong_viec/screens/lich_tuan_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Khoi tao cac dich vu he thong
+  // Khởi tạo các dịch vụ hệ thống
   final boNhoDichVu = await BoNhoDichVu.getInstance();
   final apiClient = ApiClient();
   final authRepository = AuthRepositoryImpl(
@@ -40,12 +40,12 @@ class TimassApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Timass - Quản lý thời gian & lịch trình',
+      title: 'Timass - Quản lý Lịch trình & Thời gian',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
         primaryColor: AppColors.sageGreen,
-        scaffoldBackgroundColor: AppColors.peachBackground,
+        scaffoldBackgroundColor: AppColors.headerBackgroundStart,
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppColors.sageGreen,
           primary: AppColors.sageGreen,
@@ -73,7 +73,7 @@ class AuthGate extends StatelessWidget {
     }
 
     if (authController.daDangNhap) {
-      return const DangPhatTrienScreen();
+      return const LichTuanScreen();
     }
 
     return const DangNhapScreen();

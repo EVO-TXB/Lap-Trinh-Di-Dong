@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timass/features/xac_thuc/services/auth_validation.dart';
+import 'package:timass/features/cong_viec/screens/lich_tuan_screen.dart';
 
 void main() {
   group('AuthValidation Tests', () {
@@ -34,6 +36,16 @@ void main() {
       expect(AuthValidation.tinhDoManhMatKhau('abc1234'), equals(2));
       expect(AuthValidation.tinhDoManhMatKhau('Abc12345'), equals(3));
       expect(AuthValidation.tinhDoManhMatKhau('Abc@12345'), equals(4));
+    });
+  });
+
+  group('LichTuanScreen Tests', () {
+    testWidgets('Kiem tra render man hinh lich tuan', (WidgetTester tester) async {
+      await tester.pumpWidget(const MaterialApp(home: LichTuanScreen()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Timass'), findsOneWidget);
+      expect(find.text('Thêm việc'), findsOneWidget);
     });
   });
 }
