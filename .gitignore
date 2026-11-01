@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+# Bỏ qua 1 file cụ thể
+.env
+AI_rules.md
+# Bỏ qua cả thư mục
+ui sample
