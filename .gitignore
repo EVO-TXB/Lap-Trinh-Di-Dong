@@ -46,5 +46,6 @@ app.*.map.json
 # Bỏ qua 1 file cụ thể
 .env
 AI_rules.md
+prom_tv2.md
 # Bỏ qua cả thư mục
-ui sample
+ui sample/

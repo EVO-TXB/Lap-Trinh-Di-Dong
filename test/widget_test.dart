@@ -1,30 +1,39 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:timass/main.dart';
+import 'package:timass/features/xac_thuc/services/auth_validation.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('AuthValidation Tests', () {
+    test('Validate so dien thoai Viet Nam hop le', () {
+      expect(AuthValidation.validateSoDienThoai('0987654321'), isNull);
+      expect(AuthValidation.validateSoDienThoai('0321234567'), isNull);
+      expect(AuthValidation.validateSoDienThoai('0561234567'), isNull);
+      expect(AuthValidation.validateSoDienThoai('0701234567'), isNull);
+      expect(AuthValidation.validateSoDienThoai('0891234567'), isNull);
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+      // Khong hop le
+      expect(AuthValidation.validateSoDienThoai(''), isNotNull);
+      expect(AuthValidation.validateSoDienThoai('0123456789'), isNotNull);
+      expect(AuthValidation.validateSoDienThoai('098765432'), isNotNull); // 9 so
+      expect(AuthValidation.validateSoDienThoai('09876543210'), isNotNull); // 11 so
+    });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    test('Validate mat khau hop le', () {
+      expect(AuthValidation.validateMatKhau('123456'), isNull);
+      expect(AuthValidation.validateMatKhau('12345'), isNotNull);
+      expect(AuthValidation.validateMatKhau(''), isNotNull);
+    });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    test('Validate xac nhan mat khau hop le', () {
+      expect(AuthValidation.validateXacNhanMatKhau('123456', '123456'), isNull);
+      expect(AuthValidation.validateXacNhanMatKhau('123456', '654321'), isNotNull);
+    });
+
+    test('Tinh do manh mat khau', () {
+      expect(AuthValidation.tinhDoManhMatKhau(''), equals(0));
+      expect(AuthValidation.tinhDoManhMatKhau('123'), equals(1));
+      expect(AuthValidation.tinhDoManhMatKhau('abc1234'), equals(2));
+      expect(AuthValidation.tinhDoManhMatKhau('Abc12345'), equals(3));
+      expect(AuthValidation.tinhDoManhMatKhau('Abc@12345'), equals(4));
+    });
   });
 }
