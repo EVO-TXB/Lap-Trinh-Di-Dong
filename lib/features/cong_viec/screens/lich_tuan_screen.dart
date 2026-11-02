@@ -113,21 +113,23 @@ class _LichTuanViewState extends State<_LichTuanView> {
       thoiGianBatDau: DateTime(now.year, now.month, now.day, 9, 0),
       thoiGianKetThuc: DateTime(now.year, now.month, now.day, 10, 30),
       diaDiem: '',
-      mauSac: AppColors.softSkyBlue,
+      laThietYeu: false,
       daHoanThanh: false,
+      ngayTao: DateTime.now(),
     );
 
     EventDetailDialog.show(
       context,
       congViec: newEvent,
       onSave: (created) => controller.luuCongViec(created),
+      onDelete: (_) {},
     );
   }
 
   void _hienThiDialogTaiKhoan(BuildContext context) {
     final authController = context.read<AuthController>();
-    final tenNguoiDung = authController.nguoiDung?.hoTen ?? 'Người dùng';
-    final email = authController.nguoiDung?.email ?? '';
+    final tenNguoiDung = authController.nguoiDungHienTai?.hoTen ?? 'Người dùng';
+    final soDienThoai = authController.nguoiDungHienTai?.soDienThoai ?? '';
 
     showDialog(
       context: context,
@@ -138,7 +140,7 @@ class _LichTuanViewState extends State<_LichTuanView> {
             CircleAvatar(
               radius: 20,
               backgroundColor: AppColors.sageGreen.withValues(alpha: 0.2),
-              child: const Icon(Icons.person, color: AppColors.primaryCharcoal),
+              child: const Icon(Icons.person, color: AppColors.darkNavy),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -150,15 +152,15 @@ class _LichTuanViewState extends State<_LichTuanView> {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primaryCharcoal,
+                      color: AppColors.darkNavy,
                     ),
                   ),
-                  if (email.isNotEmpty)
+                  if (soDienThoai.isNotEmpty)
                     Text(
-                      email,
+                      soDienThoai,
                       style: const TextStyle(
                         fontSize: 12,
-                        color: AppColors.secondarySlate,
+                        color: AppColors.textGrey,
                       ),
                     ),
                 ],
@@ -169,7 +171,7 @@ class _LichTuanViewState extends State<_LichTuanView> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Đóng', style: TextStyle(color: AppColors.secondarySlate)),
+            child: const Text('Đóng', style: TextStyle(color: AppColors.textGrey)),
           ),
           ElevatedButton.icon(
             onPressed: () {
@@ -193,11 +195,10 @@ class _LichTuanViewState extends State<_LichTuanView> {
     return Consumer<ScheduleController>(
       builder: (context, controller, child) {
         return Scaffold(
-          backgroundColor: AppColors.creamBackground,
           body: Stack(
             children: [
               // 1. Lớp sóng trang trí hữu cơ (Organic Fluid Waves) theo style Timass
-              Positioned.fill(
+              const Positioned.fill(
                 child: CustomPaint(
                   painter: BackgroundWavePainter(),
                 ),
@@ -240,7 +241,7 @@ class _LichTuanViewState extends State<_LichTuanView> {
                       },
                     ),
 
-                    // C. Khu vực hiển thị chuyển đổi mượt mà (Fade & Slide transition)
+                    // D. Khu vực hiển thị chuyển đổi mượt mà (Fade & Slide transition)
                     Expanded(
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 320),
@@ -279,24 +280,25 @@ class _LichTuanViewState extends State<_LichTuanView> {
     return Column(
       key: const ValueKey('WeeklyScheduleView'),
       children: [
-        // Card hiển thị tiến độ công việc trong tuần (Circular indicator & stats)
+        // Card hiển thị tiến độ công việc trong ngày (Circular indicator & stats)
         ProgressCardWidget(
-          tiLeHoanThanh: controller.tiLeHoanThanh,
-          soCongViecHoanThanh: controller.soCongViecHoanThanh,
-          tongSoCongViec: controller.tongSoCongViec,
+          tongSoViec: controller.tongSoViecHomNay,
+          soViecDaXong: controller.soViecDaXongHomNay,
+          tiLe: controller.tiLeHoanThanh,
+          phanTram: controller.phanTramHoanThanh,
         ),
 
         // Lưới ma trận thời gian 7 ngày trong tuần
         Expanded(
-          child: WeeklyGridWidget(
-            danhSachNgayTrongTuan: controller.danhSachNgayTrongTuan,
-            danhSachCongViec: controller.danhSachCongViec,
-            ngayHienTai: controller.ngayHienTai,
-            onEventTap: (congViec) =>
-                _moDialogChiTiet(context, congViec, controller),
-            onToggleStatus: (congViec) =>
-                controller.thayDoiTrangThai(congViec.id),
-          ),
+          child: controller.isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.sageGreen,
+                  ),
+                )
+              : WeeklyGridWidget(
+                  controller: controller,
+                ),
         ),
       ],
     );

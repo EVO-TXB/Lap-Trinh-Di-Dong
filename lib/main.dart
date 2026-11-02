@@ -45,7 +45,8 @@ void main() async {
 }
 
 class TimassApp extends StatelessWidget {
-  const TimassApp({super.key});
+  final Widget? home;
+  const TimassApp({super.key, this.home});
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +62,7 @@ class TimassApp extends StatelessWidget {
           primary: AppColors.sageGreen,
         ),
       ),
-      home: const AuthGate(),
+      home: home ?? const AuthGate(),
     );
   }
 }

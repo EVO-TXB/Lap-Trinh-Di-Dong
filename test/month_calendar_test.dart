@@ -91,7 +91,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
-      await tester.pumpWidget(const TimassApp());
+      await tester.pumpWidget(const TimassApp(home: LichTuanScreen()));
       await tester.pumpAndSettle();
 
       // Kiểm tra đang ở màn hình Lịch tuần ban đầu
@@ -125,7 +125,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
-      await tester.pumpWidget(const TimassApp());
+      await tester.pumpWidget(const TimassApp(home: LichTuanScreen()));
       await tester.pumpAndSettle();
 
       // Sang Lịch tháng
@@ -149,7 +149,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
-      await tester.pumpWidget(const TimassApp());
+      await tester.pumpWidget(const TimassApp(home: LichTuanScreen()));
       await tester.pumpAndSettle();
 
       // Sang Lịch tháng (mặc định chọn ngày 13/10 có nhiều việc)
@@ -169,7 +169,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
-      await tester.pumpWidget(const TimassApp());
+      await tester.pumpWidget(const TimassApp(home: LichTuanScreen()));
       await tester.pumpAndSettle();
 
       // Sang Lịch tháng
