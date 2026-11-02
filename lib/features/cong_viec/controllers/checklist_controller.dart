@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../../../core/thong_bao/dich_vu_thong_bao.dart';
 import '../models/cong_viec_model.dart';
 import '../repositories/i_event_repository.dart';
 import '../repositories/mock_event_repository.dart';
@@ -115,6 +116,11 @@ class ChecklistController extends ChangeNotifier {
 
     // 1. Cập nhật ngay trên UI để người dùng thấy phản hồi tức thì
     _danhSachCongViec[index] = congViecMoi;
+    if (congViecMoi.daHoanThanh) {
+      DichVuThongBao.instance.xoaCongViec(maSuKien);
+    } else {
+      DichVuThongBao.instance.capNhatCongViec(congViecMoi);
+    }
     notifyListeners();
 
     // 2. Gửi lệnh cập nhật xuống Repository chạy nền
@@ -152,6 +158,7 @@ class ChecklistController extends ChangeNotifier {
       }
     }
     _sapXepDanhSach();
+    DichVuThongBao.instance.capNhatCongViec(congViec);
     notifyListeners();
   }
 
@@ -162,6 +169,7 @@ class ChecklistController extends ChangeNotifier {
 
     final CongViecModel biXoa = _danhSachCongViec[index];
     _danhSachCongViec.removeAt(index);
+    DichVuThongBao.instance.xoaCongViec(maSuKien);
     notifyListeners();
 
     try {

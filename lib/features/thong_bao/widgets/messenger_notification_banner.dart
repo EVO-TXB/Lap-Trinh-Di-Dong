@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../cai_dat/controllers/settings_controller.dart';
@@ -23,6 +24,8 @@ class MessengerNotificationBanner extends StatefulWidget {
     this.thoiGianHienThi = const Duration(seconds: 5),
   });
 
+  static OverlayEntry? _activeEntry;
+
   /// Phương thức hiển thị nhanh Banner từ bất kỳ đâu thông qua Overlay
   static OverlayEntry? show(
     BuildContext context, {
@@ -35,26 +38,36 @@ class MessengerNotificationBanner extends StatefulWidget {
     final overlayState = Overlay.maybeOf(context);
     if (overlayState == null) return null;
 
+    // Loại bỏ banner cũ đang hiển thị để tránh đè chéo
+    try {
+      _activeEntry?.remove();
+    } catch (_) {}
+    _activeEntry = null;
+
     OverlayEntry? entry;
     entry = OverlayEntry(
       builder: (ctx) => MessengerNotificationBanner(
         congViec: congViec,
         thoiGianHienThi: thoiGianHienThi,
         onXemChiTiet: () {
-          entry?.remove();
+          try { entry?.remove(); } catch (_) {}
+          if (_activeEntry == entry) _activeEntry = null;
           onXemChiTiet?.call();
         },
         onHoanBao: () {
-          entry?.remove();
+          try { entry?.remove(); } catch (_) {}
+          if (_activeEntry == entry) _activeEntry = null;
           onHoanBao?.call();
         },
         onDong: () {
-          entry?.remove();
+          try { entry?.remove(); } catch (_) {}
+          if (_activeEntry == entry) _activeEntry = null;
           onDong?.call();
         },
       ),
     );
 
+    _activeEntry = entry;
     overlayState.insert(entry);
     return entry;
   }
@@ -67,6 +80,7 @@ class _MessengerNotificationBannerState extends State<MessengerNotificationBanne
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late Animation<Offset> _slideAnimation;
+  late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
   Timer? _tuDongAnTimer;
   double _dragOffsetY = 0;
@@ -76,7 +90,7 @@ class _MessengerNotificationBannerState extends State<MessengerNotificationBanne
     super.initState();
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 380),
+      duration: const Duration(milliseconds: 400),
       reverseDuration: const Duration(milliseconds: 280),
     );
 
@@ -89,10 +103,24 @@ class _MessengerNotificationBannerState extends State<MessengerNotificationBanne
       reverseCurve: Curves.easeInCubic,
     ));
 
+    _scaleAnimation = Tween<double>(
+      begin: 0.90,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOutBack,
+      reverseCurve: Curves.easeInCubic,
+    ));
+
     _fadeAnimation = CurvedAnimation(
       parent: _animController,
       curve: Curves.easeOut,
     );
+
+    // Rung nhẹ phản hồi xúc giác cao cấp
+    try {
+      HapticFeedback.lightImpact();
+    } catch (_) {}
 
     // Kích hoạt animation trượt xuống
     _animController.forward();
@@ -162,9 +190,11 @@ class _MessengerNotificationBannerState extends State<MessengerNotificationBanne
           },
           child: SlideTransition(
             position: _slideAnimation,
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: Container(
+            child: ScaleTransition(
+              scale: _scaleAnimation,
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: Container(
                 width: bannerWidth,
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -393,7 +423,8 @@ class _MessengerNotificationBannerState extends State<MessengerNotificationBanne
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   String _dinhDangGio(DateTime dt) {

@@ -36,6 +36,7 @@ class _ChatHeadBubbleWidgetState extends State<ChatHeadBubbleWidget>
   // Animation controller cho hiệu ứng nảy (Pulse/Bounce)
   late AnimationController _pulseController;
   late Animation<double> _scaleAnimation;
+  AnimationController? _snapController;
 
   @override
   void initState() {
@@ -61,6 +62,7 @@ class _ChatHeadBubbleWidgetState extends State<ChatHeadBubbleWidget>
   void dispose() {
     _tooltipTimer?.cancel();
     _pulseController.dispose();
+    _snapController?.dispose();
     super.dispose();
   }
 
@@ -72,9 +74,30 @@ class _ChatHeadBubbleWidgetState extends State<ChatHeadBubbleWidget>
     double targetX = _viTri.dx < midX ? margin : screenSize.width - bubbleSize - margin;
     double targetY = _viTri.dy.clamp(80.0, screenSize.height - 120.0);
 
-    setState(() {
-      _viTri = Offset(targetX, targetY);
-      _dangKeo = false;
+    final startOffset = _viTri;
+    final endOffset = Offset(targetX, targetY);
+
+    _snapController?.dispose();
+    final ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 260),
+    );
+    _snapController = ctrl;
+
+    final curve = CurvedAnimation(parent: ctrl, curve: Curves.easeOutBack);
+    ctrl.addListener(() {
+      if (mounted) {
+        setState(() {
+          _viTri = Offset.lerp(startOffset, endOffset, curve.value)!;
+        });
+      }
+    });
+    ctrl.forward().then((_) {
+      if (mounted) {
+        setState(() {
+          _dangKeo = false;
+        });
+      }
     });
   }
 

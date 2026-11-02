@@ -73,16 +73,28 @@ class ViewSwitcherWidget extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOutCubic,
         height: double.infinity,
         margin: const EdgeInsets.all(2.5),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.sageGreen : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.sageGreen.withValues(alpha: 0.28),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         alignment: Alignment.center,
-        child: Text(
-          title,
+        child: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
           style: TextStyle(
             fontSize: 13.5,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
@@ -90,6 +102,7 @@ class ViewSwitcherWidget extends StatelessWidget {
                 ? Colors.white
                 : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
           ),
+          child: Text(title),
         ),
       ),
     );
