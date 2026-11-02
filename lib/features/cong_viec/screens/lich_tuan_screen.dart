@@ -5,7 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/thong_bao/dich_vu_thong_bao.dart';
 import '../../thong_bao/widgets/hop_thoai_thong_bao.dart';
 import '../../thong_bao/widgets/popup_nhac_nho_dialog.dart';
-import '../../xac_thuc/providers/auth_controller.dart';
+import '../../cai_dat/screens/cai_dat_screen.dart';
 import '../controllers/schedule_controller.dart';
 import '../models/cong_viec_model.dart';
 import '../repositories/mock_event_repository.dart';
@@ -117,53 +117,6 @@ class _LichTuanViewState extends State<_LichTuanView> {
     );
   }
 
-  void _hienThiDialogTaiKhoan(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogCtx) {
-        final authController = context.read<AuthController>();
-        final nguoiDung = authController.nguoiDungHienTai;
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(
-            children: [
-              Icon(Icons.account_circle, color: AppColors.sageGreen, size: 28),
-              SizedBox(width: 8),
-              Text('Tài khoản', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Họ tên: ${nguoiDung?.hoTen ?? "Người dùng"}', style: const TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 6),
-              Text('Số điện thoại: ${nguoiDung?.soDienThoai ?? "0987654321"}', style: const TextStyle(color: Colors.grey)),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogCtx),
-              child: const Text('Đóng'),
-            ),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade400,
-                foregroundColor: Colors.white,
-              ),
-              icon: const Icon(Icons.logout, size: 16),
-              label: const Text('Đăng xuất'),
-              onPressed: () {
-                Navigator.pop(dialogCtx);
-                authController.handleDangXuat();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Consumer<ScheduleController>(
@@ -192,7 +145,12 @@ class _LichTuanViewState extends State<_LichTuanView> {
                           onXemChiTiet: (cv) => _moDialogChiTiet(context, cv, controller),
                         );
                       },
-                      onAvatar: () => _hienThiDialogTaiKhoan(context),
+                      onAvatar: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const CaiDatScreen()),
+                        );
+                      },
                       coThongBaoMoi: DichVuThongBao.instance.lichSuThongBao.isNotEmpty,
                     ),
 
