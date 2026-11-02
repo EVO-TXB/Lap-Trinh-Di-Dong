@@ -6,7 +6,10 @@ import '../../../core/thong_bao/dich_vu_thong_bao.dart';
 import '../../cong_viec/models/cong_viec_model.dart';
 import '../widgets/popup_nhac_nho_dialog.dart';
 
-/// Controller quản lý thông báo, cài đặt và điều phối Popup
+/// ============================================================================
+/// DỰ ÁN TIMASS - MODULE THÔNG BÁO NGƯỜI DÙNG (NOTIFICATION CONTROLLER)
+/// Quản lý trạng thái thông báo, huy hiệu chưa đọc và điều phối Popup nhắc nhở
+/// ============================================================================
 class ThongBaoController extends ChangeNotifier {
   final DichVuThongBao _dichVuThongBao = DichVuThongBao.instance;
   final BoNhoDichVu? _boNhoDichVu;
