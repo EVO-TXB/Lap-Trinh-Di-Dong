@@ -33,8 +33,9 @@ class ThongBaoController extends ChangeNotifier {
   }
 
   Future<void> _khoiTao() async {
-    if (_boNhoDichVu != null) {
-      await _dichVuThongBao.khoiTao(_boNhoDichVu!);
+    final boNho = _boNhoDichVu;
+    if (boNho != null) {
+      await _dichVuThongBao.khoiTao(boNho);
     }
 
     // Lắng nghe sự kiện thông báo từ Scanner Service

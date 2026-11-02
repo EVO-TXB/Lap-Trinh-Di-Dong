@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:timass/core/thong_bao/cai_dat_thong_bao_model.dart';
 import 'package:timass/core/thong_bao/dich_vu_thong_bao.dart';
 import 'package:timass/features/xac_thuc/services/auth_validation.dart';
 import 'package:timass/features/cong_viec/models/cong_viec_model.dart';
