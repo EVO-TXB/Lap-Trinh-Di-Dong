@@ -19,7 +19,7 @@ import '../widgets/weekly_grid_widget.dart';
 import 'month_calendar_view.dart';
 
 /// Màn hình chính Lịch Trình Tuần (Weekly Schedule Screen)
-/// Tích hợp đầy đủ Module Thông báo nhắc nhở & Tác vụ nền
+/// Tích hợp đầy đủ Module Thông báo nhắc nhở & Tác vụ nền (Prompt 2)
 class LichTuanScreen extends StatelessWidget {
   const LichTuanScreen({super.key});
 
@@ -113,75 +113,78 @@ class _LichTuanViewState extends State<_LichTuanView> {
       thoiGianBatDau: DateTime(now.year, now.month, now.day, 9, 0),
       thoiGianKetThuc: DateTime(now.year, now.month, now.day, 10, 30),
       diaDiem: '',
-      laThietYeu: false,
+      mauSac: AppColors.softSkyBlue,
       daHoanThanh: false,
-      nhacNhoTruocPhut: 15,
-      ngayTao: DateTime.now(),
     );
 
     EventDetailDialog.show(
       context,
       congViec: newEvent,
       onSave: (created) => controller.luuCongViec(created),
-      onDelete: (_) {},
     );
   }
 
   void _hienThiDialogTaiKhoan(BuildContext context) {
+    final authController = context.read<AuthController>();
+    final tenNguoiDung = authController.nguoiDung?.hoTen ?? 'Người dùng';
+    final email = authController.nguoiDung?.email ?? '';
+
     showDialog(
       context: context,
-      builder: (dialogCtx) {
-        final authController = context.read<AuthController>();
-        final nguoiDung = authController.nguoiDungHienTai;
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Row(
-            children: [
-              Icon(Icons.account_circle, color: AppColors.sageGreen, size: 28),
-              SizedBox(width: 8),
-              Text(
-                'Tài khoản',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Họ tên: ${nguoiDung?.hoTen ?? "Người dùng"}',
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Số điện thoại: ${nguoiDung?.soDienThoai ?? "0987654321"}',
-                style: const TextStyle(color: Colors.grey),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogCtx),
-              child: const Text('Đóng'),
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: AppColors.sageGreen.withValues(alpha: 0.2),
+              child: const Icon(Icons.person, color: AppColors.primaryCharcoal),
             ),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade400,
-                foregroundColor: Colors.white,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tenNguoiDung,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primaryCharcoal,
+                    ),
+                  ),
+                  if (email.isNotEmpty)
+                    Text(
+                      email,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.secondarySlate,
+                      ),
+                    ),
+                ],
               ),
-              icon: const Icon(Icons.logout, size: 16),
-              label: const Text('Đăng xuất'),
-              onPressed: () {
-                Navigator.pop(dialogCtx);
-                authController.handleDangXuat();
-              },
             ),
           ],
-        );
-      },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Đóng', style: TextStyle(color: AppColors.secondarySlate)),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              authController.dangXuat();
+            },
+            icon: const Icon(Icons.logout, size: 16, color: Colors.white),
+            label: const Text('Đăng xuất', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -190,11 +193,14 @@ class _LichTuanViewState extends State<_LichTuanView> {
     return Consumer<ScheduleController>(
       builder: (context, controller, child) {
         return Scaffold(
+          backgroundColor: AppColors.creamBackground,
           body: Stack(
             children: [
-              // 1. Toàn bộ họa tiết nền hữu cơ (Organic Waves) uốn lượn xuyên suốt từ trên xuống dưới
-              const Positioned.fill(
-                child: CustomPaint(painter: BackgroundWavePainter()),
+              // 1. Lớp sóng trang trí hữu cơ (Organic Fluid Waves) theo style Timass
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: BackgroundWavePainter(),
+                ),
               ),
 
               // 2. Nội dung chính giao diện xếp chồng lên trên nền trong suốt
@@ -266,6 +272,33 @@ class _LichTuanViewState extends State<_LichTuanView> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildWeeklyView(BuildContext context, ScheduleController controller) {
+    return Column(
+      key: const ValueKey('WeeklyScheduleView'),
+      children: [
+        // Card hiển thị tiến độ công việc trong tuần (Circular indicator & stats)
+        ProgressCardWidget(
+          tiLeHoanThanh: controller.tiLeHoanThanh,
+          soCongViecHoanThanh: controller.soCongViecHoanThanh,
+          tongSoCongViec: controller.tongSoCongViec,
+        ),
+
+        // Lưới ma trận thời gian 7 ngày trong tuần
+        Expanded(
+          child: WeeklyGridWidget(
+            danhSachNgayTrongTuan: controller.danhSachNgayTrongTuan,
+            danhSachCongViec: controller.danhSachCongViec,
+            ngayHienTai: controller.ngayHienTai,
+            onEventTap: (congViec) =>
+                _moDialogChiTiet(context, congViec, controller),
+            onToggleStatus: (congViec) =>
+                controller.thayDoiTrangThai(congViec.id),
+          ),
+        ),
+      ],
     );
   }
 }

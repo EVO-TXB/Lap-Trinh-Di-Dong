@@ -74,7 +74,7 @@ class DichVuThongBao {
 
   /// Quét thông báo & Thực hiện tự động hóa
   /// 1. Notification Scanner: Tìm các sự kiện bắt đầu trong vòng 15 phút tới chưa thông báo
-  /// 2. Auto-Complete Passive Events: Tự động tích hoàn thành việc thiết yếu/bị động khi quá giờ
+  /// 2. Auto-Complete Passive Events: Tự động tích việc thiết yếu/bị động khi quá giờ
   Future<void> quetThongBaoVaTuDongHoa({
     required List<CongViecModel> danhSachCongViec,
     required DateTime thoiGianHienTai,
@@ -150,6 +150,9 @@ class DichVuThongBao {
     _danhSachIdDaThongBao.add(congViecId);
     _danhSachSnooze.remove(congViecId);
   }
+
+  /// Kiểm tra xem một công việc cụ thể đã được phát thông báo hay chưa
+  bool daPhatThongBao(int congViecId) => _danhSachIdDaThongBao.contains(congViecId);
 
   /// Xóa sạch bộ nhớ đệm thông báo (dùng khi đăng xuất hoặc test lại)
   void datLaiBoNhoThongBao() {
