@@ -105,5 +105,14 @@ class BoNhoDichVu {
     await prefs.remove(keyToken);
     await prefs.remove(keyNguoiDung);
   }
-}
 
+  // Phuong thuc tro giup doc/ghi chuoi tong quat
+  Future<bool> luuChuoi(String key, String value) async {
+    final prefs = _prefs ?? await SharedPreferences.getInstance();
+    return prefs.setString(key, value);
+  }
+
+  String? layChuoi(String key) {
+    return _prefs?.getString(key);
+  }
+}
