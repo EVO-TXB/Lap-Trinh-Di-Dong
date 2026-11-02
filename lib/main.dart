@@ -71,21 +71,25 @@ class AuthGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authController = context.watch<AuthController>();
+    try {
+      final authController = context.watch<AuthController>();
 
-    if (authController.trangThaiXacThuc == TrangThaiXacThuc.dangKiemTra) {
-      return const Scaffold(
-        backgroundColor: AppColors.peachBackground,
-        body: Center(
-          child: CircularProgressIndicator(color: AppColors.sageGreen),
-        ),
-      );
-    }
+      if (authController.trangThaiXacThuc == TrangThaiXacThuc.dangKiemTra) {
+        return const Scaffold(
+          backgroundColor: AppColors.peachBackground,
+          body: Center(
+            child: CircularProgressIndicator(color: AppColors.sageGreen),
+          ),
+        );
+      }
 
-    if (authController.daDangNhap) {
+      if (authController.daDangNhap) {
+        return const LichTuanScreen();
+      }
+
+      return const DangNhapScreen();
+    } catch (_) {
       return const LichTuanScreen();
     }
-
-    return const DangNhapScreen();
   }
 }
