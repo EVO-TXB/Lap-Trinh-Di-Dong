@@ -1,0 +1,245 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../cong_viec/models/cong_viec_model.dart';
+import '../controllers/thong_bao_controller.dart';
+
+/// Hộp thoại Danh sách Thông báo & Trung tâm nhắc nhở khi nhấn vào Icon Chuông
+class HopThoaiThongBao extends StatelessWidget {
+  final Function(CongViecModel)? onXemChiTiet;
+
+  const HopThoaiThongBao({
+    super.key,
+    this.onXemChiTiet,
+  });
+
+  static void show(BuildContext context, {Function(CongViecModel)? onXemChiTiet}) {
+    context.read<ThongBaoController>().danhDauDaDoc();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => HopThoaiThongBao(onXemChiTiet: onXemChiTiet),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final thongBaoController = context.watch<ThongBaoController>();
+    final List<CongViecModel> danhSach = thongBaoController.lichSuThongBao;
+    final bool batThongBao = thongBaoController.caiDat.batThongBao;
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.75,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.0)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Tay kéo modal
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 10.0, bottom: 8.0),
+              width: 42,
+              height: 4.5,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20.0, 6.0, 16.0, 12.0),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(7.0),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.notifications_active_rounded,
+                    color: Color(0xFFEF4444),
+                    size: 20.0,
+                  ),
+                ),
+                const SizedBox(width: 10.0),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Thông báo & Nhắc nhở',
+                        style: TextStyle(
+                          fontSize: 17.0,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      Text(
+                        'Quét tự động trước 15 phút & việc thiết yếu',
+                        style: TextStyle(fontSize: 12.0, color: Color(0xFF64748B)),
+                      ),
+                    ],
+                  ),
+                ),
+                // Nút gạt bật/tắt thông báo
+                Switch(
+                  value: batThongBao,
+                  activeColor: AppColors.sageGreen,
+                  onChanged: (val) {
+                    thongBaoController.toggleBatThongBao(val);
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          const Divider(height: 1.0),
+
+          // Nút thử nghiệm Popup nhắc nhở ngay lập tức
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFF7ED),
+                foregroundColor: const Color(0xFFC2410C),
+                elevation: 0,
+                side: const BorderSide(color: Color(0xFFFFEDD5)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.0),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 11.0),
+              ),
+              icon: const Icon(Icons.alarm_on_rounded, size: 18.0),
+              label: const Text(
+                'Mở thử Popup Nhắc nhở ("Lập trình Web nâng cao")',
+                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                thongBaoController.kichHoatThongBaoThu(
+                  context,
+                  onXemChiTiet: () {
+                    final now = DateTime.now();
+                    onXemChiTiet?.call(
+                      CongViecModel(
+                        id: 9999,
+                        maNguoiDung: 1,
+                        tenCongViec: 'Lập trình Web nâng cao',
+                        thoiGianBatDau: now.add(const Duration(minutes: 15)),
+                        thoiGianKetThuc: now.add(const Duration(minutes: 105)),
+                        diaDiem: 'Phòng A3-402',
+                        laThietYeu: false,
+                        daHoanThanh: false,
+                        nhacNhoTruocPhut: 15,
+                        ngayTao: now,
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+
+          // Danh sách các thông báo
+          Flexible(
+            child: danhSach.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 36.0, horizontal: 20.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.notifications_none_rounded, size: 48, color: Colors.grey.shade300),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Chưa có thông báo nào trong phiên này',
+                          style: TextStyle(color: Color(0xFF64748B), fontSize: 14),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Hệ thống đang quét ngầm mỗi phút để nhắc việc sắp tới',
+                          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    itemCount: danhSach.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8.0),
+                    itemBuilder: (context, index) {
+                      final item = danhSach[index];
+                      final gioBatDau = DateFormat('HH:mm').format(item.thoiGianBatDau);
+                      return Container(
+                        padding: const EdgeInsets.all(12.0),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(12.0),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8.0),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFFEDD5),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.alarm, color: Color(0xFFEA580C), size: 18),
+                            ),
+                            const SizedBox(width: 12.0),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.tenCongViec,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Bắt đầu lúc $gioBatDau${item.diaDiem != null ? ' tại ${item.diaDiem}' : ''}',
+                                    style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            TextButton(
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.sageGreen,
+                              ),
+                              onPressed: () {
+                                Navigator.pop(context);
+                                thongBaoController.moPopupNhacNho(
+                                  context,
+                                  item,
+                                  onXemChiTiet: () => onXemChiTiet?.call(item),
+                                );
+                              },
+                              child: const Text('Xem popup', style: TextStyle(fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          const SizedBox(height: 12.0),
+        ],
+      ),
+    );
+  }
+}
