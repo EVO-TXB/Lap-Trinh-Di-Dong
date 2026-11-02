@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../core/thong_bao/dich_vu_thong_bao.dart';
 import '../models/cong_viec_model.dart';
 import '../repositories/i_event_repository.dart';
 
 /// Controller quản lý nghiệp vụ và tính toán giao diện Lưới Thời Gian (Weekly Grid)
+/// Tích hợp tác vụ nền quét thông báo và tự động tích việc thiết yếu (Prompt 2)
 class ScheduleController extends ChangeNotifier {
   final IEventRepository _eventRepository;
+  final DichVuThongBao _dichVuThongBao = DichVuThongBao.instance;
 
   // Cấu hình mốc giờ của Lưới thời gian
   static const int startHour = 6;  // 06:00
@@ -23,7 +26,7 @@ class ScheduleController extends ChangeNotifier {
   // Chế độ xem: 0 = Lịch tuần, 1 = Lịch tháng
   int _cheDoXem = 0;
 
-  // Thời gian thực để hiển thị Vạch đỏ Realtime
+  // Thời gian thực để hiển thị Vạch đỏ Realtime & Điều phối quét thông báo
   late DateTime _thoiGianThuc;
   Timer? _realtimeTimer;
 
@@ -42,7 +45,7 @@ class ScheduleController extends ChangeNotifier {
       0,
     );
 
-    // Kích hoạt Timer cập nhật Realtime mỗi phút
+    // Kích hoạt Timer cập nhật Realtime mỗi 30s & quét thông báo ngầm
     _startRealtimeTimer();
 
     // Nạp dữ liệu ban đầu
@@ -63,12 +66,13 @@ class ScheduleController extends ChangeNotifier {
     return DateTime(date.year, date.month, date.day).subtract(Duration(days: weekday - 1));
   }
 
-  /// Khởi động đồng hồ thời gian thực
+  /// Khởi động đồng hồ thời gian thực & tác vụ quét thông báo / tự động hóa
   void _startRealtimeTimer() {
     _realtimeTimer?.cancel();
     _realtimeTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       // Tự động tịnh tiến thời gian thực
       _thoiGianThuc = _thoiGianThuc.add(const Duration(seconds: 30));
+      quetThongBaoVaTuDongHoa();
       notifyListeners();
     });
   }
@@ -77,6 +81,38 @@ class ScheduleController extends ChangeNotifier {
   void dispose() {
     _realtimeTimer?.cancel();
     super.dispose();
+  }
+
+  /// Quét thông báo định kỳ & Tự động tích hoàn thành các việc bị động/thiết yếu khi quá giờ
+  Future<void> quetThongBaoVaTuDongHoa() async {
+    await _dichVuThongBao.quetThongBaoVaTuDongHoa(
+      danhSachCongViec: _danhSachCongViec,
+      thoiGianHienTai: _thoiGianThuc,
+      onPhatThongBao: (congViec) {
+        notifyListeners();
+      },
+      onTuDongHoanThanh: (congViec) async {
+        await capNhatTrangThaiHoanThanh(congViec, true);
+      },
+    );
+  }
+
+  /// Kích hoạt một thông báo thử nghiệm ("Lập trình Web nâng cao" trước 15 phút)
+  void kichHoatThongBaoThu() {
+    final now = _thoiGianThuc;
+    final CongViecModel sample = CongViecModel(
+      id: 9999,
+      maNguoiDung: 1,
+      tenCongViec: 'Lập trình Web nâng cao',
+      thoiGianBatDau: now.add(const Duration(minutes: 15)),
+      thoiGianKetThuc: now.add(const Duration(minutes: 105)),
+      diaDiem: 'Phòng A3-402',
+      laThietYeu: false,
+      daHoanThanh: false,
+      nhacNhoTruocPhut: 15,
+      ngayTao: now,
+    );
+    _dichVuThongBao.kichHoatThongBaoThuCong(sample);
   }
 
   /// Nạp danh sách công việc từ Repository
@@ -88,6 +124,8 @@ class ScheduleController extends ChangeNotifier {
       _danhSachCongViec = await _eventRepository.getDanhSachCongViecTheoTuan(
         ngayDauTuan: _ngayDauTuan,
       );
+      // Quét tự động ngay sau khi nạp xong dữ liệu
+      await quetThongBaoVaTuDongHoa();
     } catch (e) {
       debugPrint('Lỗi tải danh sách công việc: $e');
     } finally {

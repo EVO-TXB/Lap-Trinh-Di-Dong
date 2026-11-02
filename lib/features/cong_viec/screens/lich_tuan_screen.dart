@@ -1,6 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/thong_bao/dich_vu_thong_bao.dart';
+import '../../thong_bao/widgets/hop_thoai_thong_bao.dart';
+import '../../thong_bao/widgets/popup_nhac_nho_dialog.dart';
 import '../../xac_thuc/providers/auth_controller.dart';
 import '../controllers/schedule_controller.dart';
 import '../models/cong_viec_model.dart';
@@ -14,6 +18,7 @@ import '../widgets/view_switcher_widget.dart';
 import '../widgets/weekly_grid_widget.dart';
 
 /// Màn hình chính Lịch Trình Tuần (Weekly Schedule Screen)
+/// Tích hợp đầy đủ Module Thông báo nhắc nhở & Tác vụ nền (Prompt 2)
 class LichTuanScreen extends StatelessWidget {
   const LichTuanScreen({super.key});
 
@@ -26,8 +31,66 @@ class LichTuanScreen extends StatelessWidget {
   }
 }
 
-class _LichTuanView extends StatelessWidget {
+class _LichTuanView extends StatefulWidget {
   const _LichTuanView();
+
+  @override
+  State<_LichTuanView> createState() => _LichTuanViewState();
+}
+
+class _LichTuanViewState extends State<_LichTuanView> {
+  StreamSubscription<CongViecModel>? _streamThongBaoSub;
+
+  @override
+  void initState() {
+    super.initState();
+    // Lắng nghe sự kiện phát thông báo từ Scanner Service chạy ngầm
+    _streamThongBaoSub = DichVuThongBao.instance.streamThongBao.listen((congViec) {
+      if (!mounted) return;
+      _hienThiPopupNhacNho(congViec);
+    });
+  }
+
+  @override
+  void dispose() {
+    _streamThongBaoSub?.cancel();
+    super.dispose();
+  }
+
+  /// Hiển thị Dialog Popup Nhắc nhở theo ảnh mẫu `ui sample/ui thông báo.png`
+  void _hienThiPopupNhacNho(CongViecModel congViec) {
+    final controller = context.read<ScheduleController>();
+
+    PopupNhacNhoDialog.show(
+      context,
+      congViec: congViec,
+      onXemChiTiet: () {
+        _moDialogChiTiet(context, congViec, controller);
+      },
+      onHoanBaoSnooze: () {
+        DichVuThongBao.instance.hoanBaoSnooze(congViec.id, soPhut: 5);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đã hoãn nhắc nhở "${congViec.tenCongViec}" thêm 5 phút.'),
+            backgroundColor: AppColors.sageGreen,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      },
+      onDong: () {
+        DichVuThongBao.instance.boQuaThongBao(congViec.id);
+      },
+    );
+  }
+
+  void _moDialogChiTiet(BuildContext context, CongViecModel congViec, ScheduleController controller) {
+    EventDetailDialog.show(
+      context,
+      congViec: congViec,
+      onSave: (updated) => controller.luuCongViec(updated),
+      onDelete: (id) => controller.xoaCongViec(id),
+    );
+  }
 
   void _moDialogThemCongViec(BuildContext context, ScheduleController controller) {
     final DateTime now = controller.ngayHienTai;
@@ -40,6 +103,7 @@ class _LichTuanView extends StatelessWidget {
       diaDiem: '',
       laThietYeu: false,
       daHoanThanh: false,
+      nhacNhoTruocPhut: 15,
       ngayTao: DateTime.now(),
     );
 
@@ -106,7 +170,6 @@ class _LichTuanView extends StatelessWidget {
           body: Stack(
             children: [
               // 1. Toàn bộ họa tiết nền hữu cơ (Organic Waves) uốn lượn xuyên suốt từ trên xuống dưới
-              // và xuyên qua bên dưới Lưới lịch trình (Weekly Grid)
               const Positioned.fill(
                 child: CustomPaint(
                   painter: BackgroundWavePainter(),
@@ -122,14 +185,13 @@ class _LichTuanView extends StatelessWidget {
                     AppHeaderWidget(
                       onThemCongViec: () => _moDialogThemCongViec(context, controller),
                       onThongBao: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Không có thông báo mới!'),
-                            duration: Duration(seconds: 1),
-                          ),
+                        HopThoaiThongBao.show(
+                          context,
+                          onXemChiTiet: (cv) => _moDialogChiTiet(context, cv, controller),
                         );
                       },
                       onAvatar: () => _hienThiDialogTaiKhoan(context),
+                      coThongBaoMoi: DichVuThongBao.instance.lichSuThongBao.isNotEmpty,
                     ),
 
                     // B. Thanh điều hướng thời gian: "Tháng 10, 2026 (Tuần 42)", < >, "Hôm nay"

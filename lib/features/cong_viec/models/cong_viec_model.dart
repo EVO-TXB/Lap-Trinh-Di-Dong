@@ -12,6 +12,9 @@ class CongViecModel {
   final int nhacNhoTruocPhut;
   final DateTime ngayTao;
   final String? ghiChu;
+  final bool daThongBao;
+  final DateTime? thoiGianSnooze;
+  final String loaiSuKien; // 'CHU_DONG' hoặc 'BI_DONG'
 
   CongViecModel({
     required this.id,
@@ -26,14 +29,20 @@ class CongViecModel {
     this.nhacNhoTruocPhut = 15,
     required this.ngayTao,
     this.ghiChu,
-  });
+    this.daThongBao = false,
+    this.thoiGianSnooze,
+    String? loaiSuKien,
+  }) : loaiSuKien = loaiSuKien ?? (laThietYeu ? 'BI_DONG' : 'CHU_DONG');
+
+  /// Kiểm tra có phải công việc bị động/thiết yếu (ăn, ngủ, nghỉ)
+  bool get laViecBiDong => loaiSuKien == 'BI_DONG' || laThietYeu;
 
   /// Logic tự động tích hoàn thành theo AI_rules.md:
-  /// Nếu laThietYeu == true (ăn, ngủ) và thời gian hiện tại > thoiGianKetThuc
+  /// Nếu laThietYeu == true (hoặc việc bị động) và thời gian hiện tại > thoiGianKetThuc
   /// thì giao diện tự động render trạng thái đã hoàn thành (daHoanThanh = true).
   bool get trangThaiHoanThanhHienThi {
     if (daHoanThanh) return true;
-    if (laThietYeu && DateTime.now().isAfter(thoiGianKetThuc)) {
+    if (laViecBiDong && DateTime.now().isAfter(thoiGianKetThuc)) {
       return true;
     }
     return false;
@@ -55,6 +64,9 @@ class CongViecModel {
     int? nhacNhoTruocPhut,
     DateTime? ngayTao,
     String? ghiChu,
+    bool? daThongBao,
+    DateTime? thoiGianSnooze,
+    String? loaiSuKien,
   }) {
     return CongViecModel(
       id: id ?? this.id,
@@ -69,6 +81,9 @@ class CongViecModel {
       nhacNhoTruocPhut: nhacNhoTruocPhut ?? this.nhacNhoTruocPhut,
       ngayTao: ngayTao ?? this.ngayTao,
       ghiChu: ghiChu ?? this.ghiChu,
+      daThongBao: daThongBao ?? this.daThongBao,
+      thoiGianSnooze: thoiGianSnooze ?? this.thoiGianSnooze,
+      loaiSuKien: loaiSuKien ?? this.loaiSuKien,
     );
   }
 
@@ -86,6 +101,9 @@ class CongViecModel {
       'nhac_nho_truoc_phut': nhacNhoTruocPhut,
       'ngay_tao': ngayTao.toIso8601String(),
       'ghi_chu': ghiChu,
+      'da_thong_bao': daThongBao,
+      'thoi_gian_snooze': thoiGianSnooze?.toIso8601String(),
+      'loai_su_kien': loaiSuKien,
     };
   }
 
@@ -103,6 +121,11 @@ class CongViecModel {
       nhacNhoTruocPhut: json['nhac_nho_truoc_phut'] as int? ?? 15,
       ngayTao: DateTime.parse(json['ngay_tao'] as String),
       ghiChu: json['ghi_chu'] as String?,
+      daThongBao: json['da_thong_bao'] == true || json['da_thong_bao'] == 1,
+      thoiGianSnooze: json['thoi_gian_snooze'] != null
+          ? DateTime.tryParse(json['thoi_gian_snooze'] as String)
+          : null,
+      loaiSuKien: json['loai_su_kien'] as String?,
     );
   }
 }

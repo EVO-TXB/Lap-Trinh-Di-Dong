@@ -7,12 +7,14 @@ class AppHeaderWidget extends StatelessWidget {
   final VoidCallback? onThemCongViec;
   final VoidCallback? onThongBao;
   final VoidCallback? onAvatar;
+  final bool coThongBaoMoi;
 
   const AppHeaderWidget({
     super.key,
     this.onThemCongViec,
     this.onThongBao,
     this.onAvatar,
+    this.coThongBaoMoi = true,
   });
 
   @override
@@ -60,9 +62,9 @@ class AppHeaderWidget extends StatelessWidget {
                     Text(
                       'Thêm việc',
                       style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
                         color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -73,7 +75,7 @@ class AppHeaderWidget extends StatelessWidget {
 
           const SizedBox(width: 12),
 
-          // 3. Icon Chuông thông báo (có chấm đỏ)
+          // 3. Icon Chuông thông báo (có chấm đỏ khi có thông báo mới)
           GestureDetector(
             onTap: onThongBao,
             child: Stack(
@@ -91,19 +93,20 @@ class AppHeaderWidget extends StatelessWidget {
                     size: 24,
                   ),
                 ),
-                Positioned(
-                  top: 2,
-                  right: 2,
-                  child: Container(
-                    width: 9,
-                    height: 9,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEF4444),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 1.5),
+                if (coThongBaoMoi)
+                  Positioned(
+                    top: 2,
+                    right: 2,
+                    child: Container(
+                      width: 9,
+                      height: 9,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
