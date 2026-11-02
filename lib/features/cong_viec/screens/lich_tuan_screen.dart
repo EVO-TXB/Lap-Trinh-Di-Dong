@@ -16,9 +16,10 @@ import '../widgets/progress_card_widget.dart';
 import '../widgets/time_navigation_widget.dart';
 import '../widgets/view_switcher_widget.dart';
 import '../widgets/weekly_grid_widget.dart';
+import 'month_calendar_view.dart';
 
 /// Màn hình chính Lịch Trình Tuần (Weekly Schedule Screen)
-/// Tích hợp đầy đủ Module Thông báo nhắc nhở & Tác vụ nền (Prompt 2)
+/// Tích hợp đầy đủ Module Thông báo nhắc nhở & Tác vụ nền
 class LichTuanScreen extends StatelessWidget {
   const LichTuanScreen({super.key});
 
@@ -45,7 +46,9 @@ class _LichTuanViewState extends State<_LichTuanView> {
   void initState() {
     super.initState();
     // Lắng nghe sự kiện phát thông báo từ Scanner Service chạy ngầm
-    _streamThongBaoSub = DichVuThongBao.instance.streamThongBao.listen((congViec) {
+    _streamThongBaoSub = DichVuThongBao.instance.streamThongBao.listen((
+      congViec,
+    ) {
       if (!mounted) return;
       _hienThiPopupNhacNho(congViec);
     });
@@ -71,7 +74,9 @@ class _LichTuanViewState extends State<_LichTuanView> {
         DichVuThongBao.instance.hoanBaoSnooze(congViec.id, soPhut: 5);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Đã hoãn nhắc nhở "${congViec.tenCongViec}" thêm 5 phút.'),
+            content: Text(
+              'Đã hoãn nhắc nhở "${congViec.tenCongViec}" thêm 5 phút.',
+            ),
             backgroundColor: AppColors.sageGreen,
             duration: const Duration(seconds: 2),
           ),
@@ -83,7 +88,11 @@ class _LichTuanViewState extends State<_LichTuanView> {
     );
   }
 
-  void _moDialogChiTiet(BuildContext context, CongViecModel congViec, ScheduleController controller) {
+  void _moDialogChiTiet(
+    BuildContext context,
+    CongViecModel congViec,
+    ScheduleController controller,
+  ) {
     EventDetailDialog.show(
       context,
       congViec: congViec,
@@ -92,7 +101,10 @@ class _LichTuanViewState extends State<_LichTuanView> {
     );
   }
 
-  void _moDialogThemCongViec(BuildContext context, ScheduleController controller) {
+  void _moDialogThemCongViec(
+    BuildContext context,
+    ScheduleController controller,
+  ) {
     final DateTime now = controller.ngayHienTai;
     final CongViecModel newEvent = CongViecModel(
       id: 0,
@@ -122,21 +134,32 @@ class _LichTuanViewState extends State<_LichTuanView> {
         final authController = context.read<AuthController>();
         final nguoiDung = authController.nguoiDungHienTai;
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: const Row(
             children: [
               Icon(Icons.account_circle, color: AppColors.sageGreen, size: 28),
               SizedBox(width: 8),
-              Text('Tài khoản', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(
+                'Tài khoản',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
             ],
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Họ tên: ${nguoiDung?.hoTen ?? "Người dùng"}', style: const TextStyle(fontWeight: FontWeight.w600)),
+              Text(
+                'Họ tên: ${nguoiDung?.hoTen ?? "Người dùng"}',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
               const SizedBox(height: 6),
-              Text('Số điện thoại: ${nguoiDung?.soDienThoai ?? "0987654321"}', style: const TextStyle(color: Colors.grey)),
+              Text(
+                'Số điện thoại: ${nguoiDung?.soDienThoai ?? "0987654321"}',
+                style: const TextStyle(color: Colors.grey),
+              ),
             ],
           ),
           actions: [
@@ -171,9 +194,7 @@ class _LichTuanViewState extends State<_LichTuanView> {
             children: [
               // 1. Toàn bộ họa tiết nền hữu cơ (Organic Waves) uốn lượn xuyên suốt từ trên xuống dưới
               const Positioned.fill(
-                child: CustomPaint(
-                  painter: BackgroundWavePainter(),
-                ),
+                child: CustomPaint(painter: BackgroundWavePainter()),
               ),
 
               // 2. Nội dung chính giao diện xếp chồng lên trên nền trong suốt
@@ -183,15 +204,18 @@ class _LichTuanViewState extends State<_LichTuanView> {
                   children: [
                     // A. App Header: Logo Timass, "+ Thêm việc", Chuông thông báo, Avatar
                     AppHeaderWidget(
-                      onThemCongViec: () => _moDialogThemCongViec(context, controller),
+                      onThemCongViec: () =>
+                          _moDialogThemCongViec(context, controller),
                       onThongBao: () {
                         HopThoaiThongBao.show(
                           context,
-                          onXemChiTiet: (cv) => _moDialogChiTiet(context, cv, controller),
+                          onXemChiTiet: (cv) =>
+                              _moDialogChiTiet(context, cv, controller),
                         );
                       },
                       onAvatar: () => _hienThiDialogTaiKhoan(context),
-                      coThongBaoMoi: DichVuThongBao.instance.lichSuThongBao.isNotEmpty,
+                      coThongBaoMoi:
+                          DichVuThongBao.instance.lichSuThongBao.isNotEmpty,
                     ),
 
                     // B. Thanh điều hướng thời gian: "Tháng 10, 2026 (Tuần 42)", < >, "Hôm nay"
@@ -207,36 +231,33 @@ class _LichTuanViewState extends State<_LichTuanView> {
                       selectedIndex: controller.cheDoXem,
                       onIndexChanged: (index) {
                         controller.doiCheDoXem(index);
-                        if (index == 1) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Chế độ Lịch tháng đang được chuẩn bị trong giai đoạn tiếp theo!'),
-                              duration: Duration(seconds: 1),
-                            ),
-                          );
-                        }
                       },
                     ),
 
-                    // D. Widget tiến độ ngày (Progress Card: 5/8 việc đã xong (62%))
-                    ProgressCardWidget(
-                      tongSoViec: controller.tongSoViecHomNay,
-                      soViecDaXong: controller.soViecDaXongHomNay,
-                      tiLe: controller.tiLeHoanThanh,
-                      phanTram: controller.phanTramHoanThanh,
-                    ),
-
-                    // E. Lưới thời gian (Weekly Time Grid - Nền bán trong suốt để họa tiết xuyên qua)
+                    // C. Khu vực hiển thị chuyển đổi mượt mà (Fade & Slide transition)
                     Expanded(
-                      child: controller.isLoading
-                          ? const Center(
-                              child: CircularProgressIndicator(
-                                color: AppColors.sageGreen,
-                              ),
-                            )
-                          : WeeklyGridWidget(
-                              controller: controller,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 320),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeInCubic,
+                        transitionBuilder: (child, animation) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0.0, 0.02),
+                                end: Offset.zero,
+                              ).animate(animation),
+                              child: child,
                             ),
+                          );
+                        },
+                        child: controller.cheDoXem == 0
+                            ? _buildWeeklyView(context, controller)
+                            : const MonthCalendarView(
+                                key: ValueKey('MonthCalendarView'),
+                              ),
+                      ),
                     ),
                   ],
                 ),
