@@ -5,6 +5,7 @@ import 'package:timass/features/cong_viec/models/cong_viec_model.dart';
 import 'package:timass/features/cong_viec/repositories/mock_event_repository.dart';
 import 'package:timass/features/cong_viec/screens/lich_tuan_screen.dart';
 import 'package:timass/features/cong_viec/screens/month_calendar_view.dart';
+import 'package:timass/features/cong_viec/widgets/monthly_calendar_grid.dart';
 import 'package:timass/main.dart';
 
 void main() {
@@ -85,7 +86,7 @@ void main() {
   });
 
   group('UI Integration Tests - Chuyen doi Lich Tuan & Lich Thang', () {
-    testWidgets('Kiem tra chuyen doi muot ma qua nut [Lich thang] va hien thi du lieu', (WidgetTester tester) async {
+    testWidgets('Kiem tra chuyen doi muot ma qua nut [Lich thang] va chi hien thi ma tran lich thang', (WidgetTester tester) async {
       // Set kích thước màn hình test
       tester.view.physicalSize = const Size(800, 1200);
       tester.view.devicePixelRatio = 1.0;
@@ -109,8 +110,8 @@ void main() {
       expect(find.text('T2'), findsOneWidget);
       expect(find.text('CN'), findsOneWidget);
 
-      // Kiểm tra Panel công việc hiển thị ngày được chọn
-      expect(find.textContaining('Lịch trình ngày'), findsOneWidget);
+      // Đã loại bỏ panel kéo checklist theo đúng yêu cầu
+      expect(find.byType(DraggableScrollableSheet), findsNothing);
 
       // Chuyển lại về Lịch tuần
       await tester.tap(find.text('Lịch tuần'));
@@ -120,7 +121,7 @@ void main() {
       expect(find.textContaining('(Tuần 42)'), findsOneWidget);
     });
 
-    testWidgets('Kiem tra chon ngay khong co lich hien thi Empty State', (WidgetTester tester) async {
+    testWidgets('Kiem tra dieu huong thang tren giao dien lich thang', (WidgetTester tester) async {
       tester.view.physicalSize = const Size(800, 1200);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
@@ -132,68 +133,29 @@ void main() {
       await tester.tap(find.text('Lịch tháng'));
       await tester.pumpAndSettle();
 
-      // Ngày 1/10/2026 không có công việc nào trong Mock data
-      // Tìm cell chứa số 1 và tap vào
-      final Finder day1Cell = find.text('1');
-      expect(day1Cell, findsWidgets);
-      await tester.tap(day1Cell.first);
+      expect(find.text('Tháng 10, 2026'), findsOneWidget);
+
+      // Bấm nút chuyển sang tháng sau > bên trong MonthlyCalendarGrid
+      final Finder nextMonthBtn = find.descendant(
+        of: find.byType(MonthlyCalendarGrid),
+        matching: find.byIcon(Icons.chevron_right_rounded),
+      );
+      expect(nextMonthBtn, findsOneWidget);
+      await tester.tap(nextMonthBtn);
       await tester.pumpAndSettle();
 
-      // Kiểm tra hiển thị Empty State
-      expect(find.text('Không có công việc nào trong ngày này'), findsOneWidget);
-      expect(find.text('Thêm việc cho ngày này'), findsOneWidget);
-    });
+      expect(find.text('Tháng 11, 2026'), findsOneWidget);
 
-    testWidgets('Kiem tra danh dau checkbox tron hoan thanh cong viec', (WidgetTester tester) async {
-      tester.view.physicalSize = const Size(800, 1200);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() => tester.view.resetPhysicalSize());
-
-      await tester.pumpWidget(const TimassApp(home: LichTuanScreen()));
+      // Bấm nút "Hôm nay" bên trong MonthlyCalendarGrid để quay về tháng 10
+      final Finder todayBtn = find.descendant(
+        of: find.byType(MonthlyCalendarGrid),
+        matching: find.text('Hôm nay'),
+      );
+      expect(todayBtn, findsOneWidget);
+      await tester.tap(todayBtn);
       await tester.pumpAndSettle();
 
-      // Sang Lịch tháng (mặc định chọn ngày 13/10 có nhiều việc)
-      await tester.tap(find.text('Lịch tháng'));
-      await tester.pumpAndSettle();
-
-      // Tìm công việc hiển thị ở đầu danh sách ngày 13: 'Nghỉ trưa & Ăn cơm'
-      expect(find.text('Nghỉ trưa & Ăn cơm'), findsOneWidget);
-
-      // Tap vào công việc
-      await tester.tap(find.text('Nghỉ trưa & Ăn cơm'));
-      await tester.pumpAndSettle();
-    });
-
-    testWidgets('Kiem tra keo panel lich trinh len tren va thu gon', (WidgetTester tester) async {
-      tester.view.physicalSize = const Size(800, 1200);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() => tester.view.resetPhysicalSize());
-
-      await tester.pumpWidget(const TimassApp(home: LichTuanScreen()));
-      await tester.pumpAndSettle();
-
-      // Sang Lịch tháng
-      await tester.tap(find.text('Lịch tháng'));
-      await tester.pumpAndSettle();
-
-      // Kiểm tra sự xuất hiện của DraggableScrollableSheet
-      expect(find.byType(DraggableScrollableSheet), findsOneWidget);
-
-      // Nhấn vào nút mũi tên mở rộng / thanh kéo để mở rộng hẳn lên trên
-      final Finder expandIcon = find.byIcon(Icons.keyboard_arrow_up_rounded);
-      expect(expandIcon, findsOneWidget);
-      await tester.tap(expandIcon);
-      await tester.pumpAndSettle();
-
-      // Khi đã kéo/mở rộng hẳn lên trên, icon đổi thành mũi tên xuống (thu gọn)
-      expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
-
-      // Nhấn thu gọn lại
-      await tester.tap(find.byIcon(Icons.keyboard_arrow_down_rounded));
-      await tester.pumpAndSettle();
-
-      // Trở lại trạng thái bình thường
-      expect(find.byIcon(Icons.keyboard_arrow_up_rounded), findsOneWidget);
+      expect(find.text('Tháng 10, 2026'), findsOneWidget);
     });
   });
 }

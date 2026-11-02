@@ -16,6 +16,7 @@ import '../widgets/progress_card_widget.dart';
 import '../widgets/time_navigation_widget.dart';
 import '../widgets/view_switcher_widget.dart';
 import '../widgets/weekly_grid_widget.dart';
+import 'checklist_screen.dart';
 import 'month_calendar_view.dart';
 
 /// Màn hình chính Lịch Trình Tuần (Weekly Schedule Screen)
@@ -280,12 +281,21 @@ class _LichTuanViewState extends State<_LichTuanView> {
     return Column(
       key: const ValueKey('WeeklyScheduleView'),
       children: [
-        // Card hiển thị tiến độ công việc trong ngày (Circular indicator & stats)
+        // Card hiển thị tiến độ công việc trong ngày (Tapping opens ChecklistScreen)
         ProgressCardWidget(
           tongSoViec: controller.tongSoViecHomNay,
           soViecDaXong: controller.soViecDaXongHomNay,
           tiLe: controller.tiLeHoanThanh,
           phanTram: controller.phanTramHoanThanh,
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ChecklistScreen(
+                  initialDate: controller.ngayHienTai,
+                ),
+              ),
+            );
+          },
         ),
 
         // Lưới ma trận thời gian 7 ngày trong tuần

@@ -184,6 +184,93 @@ class MockEventRepository implements IEventRepository {
         ngayTao: DateTime(nam, thang, 1),
       ),
 
+      // --- Thứ Tư 21/10/2026 (Checklist Screen UI Sample) ---
+      CongViecModel(
+        id: 201,
+        maNguoiDung: 1,
+        tenCongViec: 'Học Lập trình Web',
+        thoiGianBatDau: DateTime(nam, thang, 21, 7, 30),
+        thoiGianKetThuc: DateTime(nam, thang, 21, 9, 30),
+        diaDiem: 'A3-402',
+        laThietYeu: false,
+        daHoanThanh: true,
+        ngayTao: DateTime(nam, thang, 1),
+      ),
+      CongViecModel(
+        id: 202,
+        maNguoiDung: 1,
+        tenCongViec: 'Họp nhóm FootyBook',
+        thoiGianBatDau: DateTime(nam, thang, 21, 10, 0),
+        thoiGianKetThuc: DateTime(nam, thang, 21, 11, 30),
+        laThietYeu: false,
+        daHoanThanh: false,
+        ngayTao: DateTime(nam, thang, 1),
+        ghiChu: 'Chủ động',
+      ),
+      CongViecModel(
+        id: 203,
+        maNguoiDung: 1,
+        tenCongViec: 'Nghỉ trưa & Ăn cơm',
+        thoiGianBatDau: DateTime(nam, thang, 21, 11, 30),
+        thoiGianKetThuc: DateTime(nam, thang, 21, 13, 0),
+        laThietYeu: true,
+        daHoanThanh: true,
+        ngayTao: DateTime(nam, thang, 1),
+        ghiChu: 'Bị động',
+      ),
+      CongViecModel(
+        id: 204,
+        maNguoiDung: 1,
+        tenCongViec: 'Tự học TOEIC Listening',
+        thoiGianBatDau: DateTime(nam, thang, 21, 15, 0),
+        thoiGianKetThuc: DateTime(nam, thang, 21, 17, 0),
+        laThietYeu: false,
+        daHoanThanh: false,
+        ngayTao: DateTime(nam, thang, 1),
+      ),
+      CongViecModel(
+        id: 205,
+        maNguoiDung: 1,
+        tenCongViec: 'Tập Gym',
+        thoiGianBatDau: DateTime(nam, thang, 21, 19, 30),
+        thoiGianKetThuc: DateTime(nam, thang, 21, 21, 0),
+        laThietYeu: false,
+        daHoanThanh: false,
+        ngayTao: DateTime(nam, thang, 1),
+      ),
+      CongViecModel(
+        id: 206,
+        maNguoiDung: 1,
+        tenCongViec: 'Đọc sách phát triển bản thân',
+        thoiGianBatDau: DateTime(nam, thang, 21, 6, 0),
+        thoiGianKetThuc: DateTime(nam, thang, 21, 6, 45),
+        laThietYeu: false,
+        daHoanThanh: true,
+        ngayTao: DateTime(nam, thang, 1),
+      ),
+      CongViecModel(
+        id: 207,
+        maNguoiDung: 1,
+        tenCongViec: 'Hoàn thiện báo cáo Sprint',
+        thoiGianBatDau: DateTime(nam, thang, 21, 13, 30),
+        thoiGianKetThuc: DateTime(nam, thang, 21, 14, 30),
+        diaDiem: 'Online',
+        laThietYeu: false,
+        daHoanThanh: true,
+        ngayTao: DateTime(nam, thang, 1),
+      ),
+      CongViecModel(
+        id: 208,
+        maNguoiDung: 1,
+        tenCongViec: 'Viết nhật ký & Lên kế hoạch ngày mai',
+        thoiGianBatDau: DateTime(nam, thang, 21, 21, 30),
+        thoiGianKetThuc: DateTime(nam, thang, 21, 22, 0),
+        laThietYeu: true,
+        daHoanThanh: true,
+        ngayTao: DateTime(nam, thang, 1),
+        ghiChu: 'Bị động',
+      ),
+
       // --- Thứ Bảy 24/10/2026 ---
       CongViecModel(
         id: 107,
@@ -273,5 +360,11 @@ class MockEventRepository implements IEventRepository {
     final int initialLength = _danhSachMock.length;
     _danhSachMock.removeWhere((e) => e.id == id);
     return _danhSachMock.length < initialLength;
+  }
+
+  /// Đặt lại toàn bộ dữ liệu mẫu ban đầu (dùng cho unit test & reset)
+  void datLaiDuLieuMau() {
+    _danhSachMock.clear();
+    _khoiTaoDuLieuMau();
   }
 }
