@@ -5,7 +5,10 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/thong_bao/dich_vu_thong_bao.dart';
 import '../../thong_bao/widgets/hop_thoai_thong_bao.dart';
 import '../../thong_bao/widgets/popup_nhac_nho_dialog.dart';
-import '../../xac_thuc/providers/auth_controller.dart';
+import '../../thong_bao/widgets/messenger_notification_banner.dart';
+import '../../thong_bao/widgets/chat_head_bubble_widget.dart';
+import '../../cai_dat/controllers/settings_controller.dart';
+import '../../cai_dat/screens/cai_dat_screen.dart';
 import '../controllers/schedule_controller.dart';
 import '../models/cong_viec_model.dart';
 import '../repositories/mock_event_repository.dart';
@@ -42,6 +45,7 @@ class _LichTuanView extends StatefulWidget {
 
 class _LichTuanViewState extends State<_LichTuanView> {
   StreamSubscription<CongViecModel>? _streamThongBaoSub;
+  final List<CongViecModel> _danhSachBongBong = [];
 
   @override
   void initState() {
@@ -49,7 +53,7 @@ class _LichTuanViewState extends State<_LichTuanView> {
     // Lắng nghe sự kiện phát thông báo từ Scanner Service chạy ngầm
     _streamThongBaoSub = DichVuThongBao.instance.streamThongBao.listen((congViec) {
       if (!mounted) return;
-      _hienThiPopupNhacNho(congViec);
+      _xuLyPhatThongBao(congViec);
     });
   }
 
@@ -57,6 +61,59 @@ class _LichTuanViewState extends State<_LichTuanView> {
   void dispose() {
     _streamThongBaoSub?.cancel();
     super.dispose();
+  }
+
+  /// Xử lý phát thông báo phong cách Messenger (Banner trượt & Bong bóng nổi)
+  void _xuLyPhatThongBao(CongViecModel congViec) {
+    SettingsController? settings;
+    try {
+      settings = context.read<SettingsController>();
+    } catch (_) {
+      settings = null;
+    }
+
+    final kieu = settings?.kieuThongBao ?? 'Cả hai (Banner + Bong bóng)';
+    final controller = context.read<ScheduleController>();
+
+    if (kieu == 'Hộp thoại Popup') {
+      _hienThiPopupNhacNho(congViec);
+      return;
+    }
+
+    // 1. Kiểu 1: Banner trượt từ đỉnh màn hình xuống (Heads-up Notification)
+    if (kieu.contains('Banner') || kieu.contains('Cả hai')) {
+      MessengerNotificationBanner.show(
+        context,
+        congViec: congViec,
+        onXemChiTiet: () {
+          _moDialogChiTiet(context, congViec, controller);
+        },
+        onHoanBao: () {
+          DichVuThongBao.instance.hoanBaoSnooze(congViec.id, soPhut: 5);
+          if (mounted) {
+            setState(() => _danhSachBongBong.removeWhere((e) => e.id == congViec.id));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Đã hoãn nhắc nhở "${congViec.tenCongViec}" thêm 5 phút.'),
+                backgroundColor: AppColors.sageGreen,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+        },
+      );
+    }
+
+    // 2. Kiểu 2: Bong bóng nổi kéo thả Messenger (Chat Head)
+    if (kieu.contains('Bong bóng') || kieu.contains('Cả hai')) {
+      if (mounted) {
+        setState(() {
+          if (!_danhSachBongBong.any((e) => e.id == congViec.id)) {
+            _danhSachBongBong.insert(0, congViec);
+          }
+        });
+      }
+    }
   }
 
   /// Hiển thị Dialog Popup Nhắc nhở theo ảnh mẫu `ui sample/ui thông báo.png`
@@ -123,53 +180,6 @@ class _LichTuanViewState extends State<_LichTuanView> {
     );
   }
 
-  void _hienThiDialogTaiKhoan(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogCtx) {
-        final authController = context.read<AuthController>();
-        final nguoiDung = authController.nguoiDungHienTai;
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(
-            children: [
-              Icon(Icons.account_circle, color: AppColors.sageGreen, size: 28),
-              SizedBox(width: 8),
-              Text('Tài khoản', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Họ tên: ${nguoiDung?.hoTen ?? "Người dùng"}', style: const TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 6),
-              Text('Số điện thoại: ${nguoiDung?.soDienThoai ?? "0987654321"}', style: const TextStyle(color: Colors.grey)),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogCtx),
-              child: const Text('Đóng'),
-            ),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade400,
-                foregroundColor: Colors.white,
-              ),
-              icon: const Icon(Icons.logout, size: 16),
-              label: const Text('Đăng xuất'),
-              onPressed: () {
-                Navigator.pop(dialogCtx);
-                authController.handleDangXuat();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Consumer<ScheduleController>(
@@ -198,7 +208,12 @@ class _LichTuanViewState extends State<_LichTuanView> {
                           onXemChiTiet: (cv) => _moDialogChiTiet(context, cv, controller),
                         );
                       },
-                      onAvatar: () => _hienThiDialogTaiKhoan(context),
+                      onAvatar: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const CaiDatScreen()),
+                        );
+                      },
                       coThongBaoMoi: DichVuThongBao.instance.lichSuThongBao.isNotEmpty,
                     ),
 
@@ -246,6 +261,31 @@ class _LichTuanViewState extends State<_LichTuanView> {
                   ],
                 ),
               ),
+
+              // 3. Bong bóng nổi kéo thả phong cách Messenger (Chat Head)
+              if (_danhSachBongBong.isNotEmpty)
+                ChatHeadBubbleWidget(
+                  danhSachCongViec: _danhSachBongBong,
+                  onXemChiTiet: (cv) => _moDialogChiTiet(context, cv, controller),
+                  onHoanBao: (cv) {
+                    DichVuThongBao.instance.hoanBaoSnooze(cv.id, soPhut: 5);
+                    if (mounted) {
+                      setState(() => _danhSachBongBong.removeWhere((e) => e.id == cv.id));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Đã hoãn nhắc nhở "${cv.tenCongViec}" thêm 5 phút.'),
+                          backgroundColor: AppColors.sageGreen,
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+                  onDongBongBong: () {
+                    if (mounted) {
+                      setState(() => _danhSachBongBong.clear());
+                    }
+                  },
+                ),
             ],
           ),
         );
