@@ -107,51 +107,6 @@ class HopThoaiThongBao extends StatelessWidget {
 
           const Divider(height: 1.0),
 
-          // Nút thử nghiệm Popup nhắc nhở ngay lập tức
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFF7ED),
-                foregroundColor: const Color(0xFFC2410C),
-                elevation: 0,
-                side: const BorderSide(color: Color(0xFFFFEDD5)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 11.0),
-              ),
-              icon: const Icon(Icons.alarm_on_rounded, size: 18.0),
-              label: const Text(
-                'Mở thử Popup Nhắc nhở ("Lập trình Web nâng cao")',
-                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
-              ),
-              onPressed: () {
-                Navigator.pop(context);
-                thongBaoController.kichHoatThongBaoThu(
-                  context,
-                  onXemChiTiet: () {
-                    final now = DateTime.now();
-                    onXemChiTiet?.call(
-                      CongViecModel(
-                        id: 9999,
-                        maNguoiDung: 1,
-                        tenCongViec: 'Lập trình Web nâng cao',
-                        thoiGianBatDau: now.add(const Duration(minutes: 15)),
-                        thoiGianKetThuc: now.add(const Duration(minutes: 105)),
-                        diaDiem: 'Phòng A3-402',
-                        laThietYeu: false,
-                        daHoanThanh: false,
-                        nhacNhoTruocPhut: 15,
-                        ngayTao: now,
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-
           // Danh sách các thông báo
           Flexible(
             child: danhSach.isEmpty

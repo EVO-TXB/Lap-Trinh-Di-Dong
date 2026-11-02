@@ -344,6 +344,38 @@ class CaiDatScreen extends StatelessWidget {
                                 ),
                               ],
                             ),
+
+                            const Divider(height: 18, color: Color(0xFFF1F5F9)),
+
+                            // Kiểu thông báo (Messenger banner / Chat head)
+                            Row(
+                              children: [
+                                const Icon(Icons.style_rounded, color: Color(0xFF6366F1), size: 22),
+                                const SizedBox(width: 12),
+                                const Expanded(
+                                  child: Text(
+                                    'Kiểu thông báo',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.darkNavy,
+                                    ),
+                                  ),
+                                ),
+                                _buildDropdownSelector<String>(
+                                  value: controller.kieuThongBao,
+                                  items: const [
+                                    'Cả hai (Banner + Bong bóng)',
+                                    'Banner trượt Messenger',
+                                    'Bong bóng nổi (Chat Head)',
+                                    'Hộp thoại Popup',
+                                  ],
+                                  onChanged: (val) {
+                                    if (val != null) controller.capNhatKieuThongBao(val);
+                                  },
+                                ),
+                              ],
+                            ),
                           ],
                         ),
 

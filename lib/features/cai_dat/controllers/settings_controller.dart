@@ -30,6 +30,7 @@ class SettingsController extends ChangeNotifier {
   bool get batThongBaoDay => _caiDat.batThongBaoDay;
   int get thoiGianNhacTruoc => _caiDat.thoiGianNhacTruoc;
   bool get amThanhRung => _caiDat.amThanhRung;
+  String get kieuThongBao => _caiDat.kieuThongBao;
   String get ngonNgu => _caiDat.ngonNgu;
   String get cheDoGiaoDien => _caiDat.cheDoGiaoDien;
   DateTime get thoiGianDongBoLanCuoi => _caiDat.thoiGianDongBoLanCuoi;
@@ -87,6 +88,13 @@ class SettingsController extends ChangeNotifier {
   /// Cập nhật Âm thanh & Rung
   Future<void> capNhatAmThanhRung(bool giaTri) async {
     _caiDat = _caiDat.copyWith(amThanhRung: giaTri);
+    notifyListeners();
+    await _luuVaDongBo();
+  }
+
+  /// Cập nhật Kiểu hiển thị thông báo
+  Future<void> capNhatKieuThongBao(String kieuMoi) async {
+    _caiDat = _caiDat.copyWith(kieuThongBao: kieuMoi);
     notifyListeners();
     await _luuVaDongBo();
   }

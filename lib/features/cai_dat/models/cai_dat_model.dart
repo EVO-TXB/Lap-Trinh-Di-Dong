@@ -11,6 +11,7 @@ class CaiDatModel {
   final bool batThongBaoDay;
   final int thoiGianNhacTruoc; // Số phút: 5, 10, 15, 30, 60
   final bool amThanhRung;
+  final String kieuThongBao; // 'Cả hai (Banner + Bong bóng)' | 'Banner trượt Messenger' | 'Bong bóng nổi (Chat Head)' | 'Hộp thoại Popup'
 
   // Giao diện & Ngôn ngữ
   final String ngonNgu; // 'Tiếng Việt' | 'English'
@@ -25,6 +26,7 @@ class CaiDatModel {
     this.batThongBaoDay = true,
     this.thoiGianNhacTruoc = 15,
     this.amThanhRung = true,
+    this.kieuThongBao = 'Cả hai (Banner + Bong bóng)',
     this.ngonNgu = 'Tiếng Việt',
     this.cheDoGiaoDien = 'Sáng',
     required this.thoiGianDongBoLanCuoi,
@@ -38,6 +40,7 @@ class CaiDatModel {
       batThongBaoDay: true,
       thoiGianNhacTruoc: 15,
       amThanhRung: true,
+      kieuThongBao: 'Cả hai (Banner + Bong bóng)',
       ngonNgu: 'Tiếng Việt',
       cheDoGiaoDien: 'Sáng',
       thoiGianDongBoLanCuoi: DateTime.now().subtract(const Duration(minutes: 10)),
@@ -72,6 +75,7 @@ class CaiDatModel {
     bool? batThongBaoDay,
     int? thoiGianNhacTruoc,
     bool? amThanhRung,
+    String? kieuThongBao,
     String? ngonNgu,
     String? cheDoGiaoDien,
     DateTime? thoiGianDongBoLanCuoi,
@@ -82,6 +86,7 @@ class CaiDatModel {
       batThongBaoDay: batThongBaoDay ?? this.batThongBaoDay,
       thoiGianNhacTruoc: thoiGianNhacTruoc ?? this.thoiGianNhacTruoc,
       amThanhRung: amThanhRung ?? this.amThanhRung,
+      kieuThongBao: kieuThongBao ?? this.kieuThongBao,
       ngonNgu: ngonNgu ?? this.ngonNgu,
       cheDoGiaoDien: cheDoGiaoDien ?? this.cheDoGiaoDien,
       thoiGianDongBoLanCuoi: thoiGianDongBoLanCuoi ?? this.thoiGianDongBoLanCuoi,
@@ -95,6 +100,7 @@ class CaiDatModel {
       'bat_thong_bao_day': batThongBaoDay,
       'thoi_gian_nhac_truoc': thoiGianNhacTruoc,
       'am_thanh_rung': amThanhRung,
+      'kieu_thong_bao': kieuThongBao,
       'ngon_ngu': ngonNgu,
       'che_do_giao_dien': cheDoGiaoDien,
       'thoi_gian_dong_bo_lan_cuoi': thoiGianDongBoLanCuoi.toIso8601String(),
@@ -108,6 +114,7 @@ class CaiDatModel {
       batThongBaoDay: map['bat_thong_bao_day'] as bool? ?? true,
       thoiGianNhacTruoc: map['thoi_gian_nhac_truoc'] as int? ?? 15,
       amThanhRung: map['am_thanh_rung'] as bool? ?? true,
+      kieuThongBao: map['kieu_thong_bao'] as String? ?? 'Cả hai (Banner + Bong bóng)',
       ngonNgu: map['ngon_ngu'] as String? ?? 'Tiếng Việt',
       cheDoGiaoDien: map['che_do_giao_dien'] as String? ?? 'Sáng',
       thoiGianDongBoLanCuoi: map['thoi_gian_dong_bo_lan_cuoi'] != null
