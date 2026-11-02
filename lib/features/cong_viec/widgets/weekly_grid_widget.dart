@@ -132,8 +132,8 @@ class _WeeklyGridWidgetState extends State<WeeklyGridWidget> {
                                 }),
                               ),
 
-                              // Vạch ngang đỏ tươi hiển thị GIỜ HIỆN TẠI xuyên suốt các cột
-                              if (redLineTop >= 0 && redLineTop <= totalGridHeight)
+                              // Vạch ngang đỏ tươi hiển thị GIỜ HIỆN TẠI (chỉ hiển thị khi tuần đang xem chứa ngày hôm nay)
+                              if (widget.controller.tuanDangXemChuaHomNay && redLineTop >= 0 && redLineTop <= totalGridHeight)
                                 Positioned(
                                   top: redLineTop,
                                   left: 0,
@@ -182,21 +182,43 @@ class _WeeklyGridWidgetState extends State<WeeklyGridWidget> {
                   children: List.generate(7, (index) {
                     final DateTime date = cacNgayTrongTuan[index];
                     final String thuText = '${tenThuVietTat[index]} ${date.day}';
-                    final bool isToday = date.day == widget.controller.ngayHienTai.day &&
-                                         date.month == widget.controller.ngayHienTai.month &&
-                                         date.year == widget.controller.ngayHienTai.year;
+                    final bool isToday = widget.controller.laNgayHomNay(date);
 
                     return Container(
                       width: dayColumnWidth,
                       alignment: Alignment.center,
-                      child: Text(
-                        thuText,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
-                          color: isToday ? AppColors.darkNavy : AppColors.textDark,
-                        ),
-                      ),
+                      child: isToday
+                          ? Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+                              decoration: BoxDecoration(
+                                color: AppColors.sageGreen,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.sageGreen.withValues(alpha: 0.35),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1.5),
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                thuText,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              thuText,
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textDark,
+                              ),
+                            ),
                     );
                   }),
                 ),
@@ -241,8 +263,10 @@ class _WeeklyGridWidgetState extends State<WeeklyGridWidget> {
             }),
           ),
 
-          // Badge màu đỏ tươi nổi bật hiển thị giờ hiện tại (18:00)
-          if (redLineTop >= 0 && redLineTop <= totalHours * ScheduleController.hourHeight)
+          // Badge màu đỏ tươi nổi bật hiển thị giờ hiện tại (18:00) nếu đang ở tuần hôm nay
+          if (widget.controller.tuanDangXemChuaHomNay &&
+              redLineTop >= 0 &&
+              redLineTop <= totalHours * ScheduleController.hourHeight)
             Positioned(
               top: redLineTop - 10.0,
               left: 4,
@@ -308,10 +332,13 @@ class _WeeklyGridWidgetState extends State<WeeklyGridWidget> {
     required double totalGridHeight,
   }) {
     final List<CongViecModel> events = widget.controller.getDanhSachCongViecTheoThu(colIndex);
+    final DateTime targetDate = widget.controller.ngayDauTuan.add(Duration(days: colIndex));
+    final bool isToday = widget.controller.laNgayHomNay(targetDate);
 
-    return SizedBox(
+    return Container(
       width: dayColumnWidth,
       height: totalGridHeight,
+      color: isToday ? AppColors.sageGreen.withValues(alpha: 0.035) : Colors.transparent,
       child: Stack(
         children: events.map((congViec) {
           final double top = widget.controller.calculateTopPosition(congViec.thoiGianBatDau);
@@ -331,8 +358,11 @@ class _WeeklyGridWidgetState extends State<WeeklyGridWidget> {
                 EventDetailDialog.show(
                   context,
                   congViec: congViec,
+                  danhSachHienCo: widget.controller.danhSachCongViec,
                   onSave: (updated) => widget.controller.luuCongViec(updated),
                   onDelete: (id) => widget.controller.xoaCongViec(id),
+                  onSaveBatch: (batch) => widget.controller.luuChuoiCongViec(batch),
+                  onDeleteSeries: (maChuoi) => widget.controller.xoaChuoiCongViec(maChuoi),
                 );
               },
             ),

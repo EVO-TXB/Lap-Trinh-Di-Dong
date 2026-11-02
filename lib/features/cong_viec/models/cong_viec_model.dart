@@ -3,6 +3,7 @@ class CongViecModel {
   final int id;
   final int maNguoiDung;
   final int? maQuyTacLap;
+  final String? maChuoiLap; // Mã định danh chuỗi sự kiện lặp lại
   final String tenCongViec;
   final DateTime thoiGianBatDau;
   final DateTime thoiGianKetThuc;
@@ -20,6 +21,7 @@ class CongViecModel {
     required this.id,
     required this.maNguoiDung,
     this.maQuyTacLap,
+    String? maChuoiLap,
     required this.tenCongViec,
     required this.thoiGianBatDau,
     required this.thoiGianKetThuc,
@@ -32,7 +34,11 @@ class CongViecModel {
     this.daThongBao = false,
     this.thoiGianSnooze,
     String? loaiSuKien,
-  }) : loaiSuKien = loaiSuKien ?? (laThietYeu ? 'BI_DONG' : 'CHU_DONG');
+  })  : maChuoiLap = maChuoiLap ?? (maQuyTacLap != null ? '$maQuyTacLap' : null),
+        loaiSuKien = loaiSuKien ?? (laThietYeu ? 'BI_DONG' : 'CHU_DONG');
+
+  /// Kiểm tra xem sự kiện có thuộc chuỗi lặp lại không
+  bool get coLapLai => (maChuoiLap != null && maChuoiLap!.isNotEmpty) || maQuyTacLap != null;
 
   /// Kiểm tra có phải công việc bị động/thiết yếu (ăn, ngủ, nghỉ)
   bool get laViecBiDong => loaiSuKien == 'BI_DONG' || laThietYeu;
@@ -55,6 +61,7 @@ class CongViecModel {
     int? id,
     int? maNguoiDung,
     int? maQuyTacLap,
+    String? maChuoiLap,
     String? tenCongViec,
     DateTime? thoiGianBatDau,
     DateTime? thoiGianKetThuc,
@@ -72,6 +79,7 @@ class CongViecModel {
       id: id ?? this.id,
       maNguoiDung: maNguoiDung ?? this.maNguoiDung,
       maQuyTacLap: maQuyTacLap ?? this.maQuyTacLap,
+      maChuoiLap: maChuoiLap ?? this.maChuoiLap,
       tenCongViec: tenCongViec ?? this.tenCongViec,
       thoiGianBatDau: thoiGianBatDau ?? this.thoiGianBatDau,
       thoiGianKetThuc: thoiGianKetThuc ?? this.thoiGianKetThuc,
@@ -92,6 +100,7 @@ class CongViecModel {
       'id': id,
       'ma_nguoi_dung': maNguoiDung,
       'ma_quy_tac_lap': maQuyTacLap,
+      'ma_chuoi_lap': maChuoiLap,
       'ten_cong_viec': tenCongViec,
       'thoi_gian_bat_dau': thoiGianBatDau.toIso8601String(),
       'thoi_gian_ket_thuc': thoiGianKetThuc.toIso8601String(),
@@ -112,6 +121,7 @@ class CongViecModel {
       id: json['id'] as int,
       maNguoiDung: json['ma_nguoi_dung'] as int,
       maQuyTacLap: json['ma_quy_tac_lap'] as int?,
+      maChuoiLap: json['ma_chuoi_lap'] as String?,
       tenCongViec: json['ten_cong_viec'] as String,
       thoiGianBatDau: DateTime.parse(json['thoi_gian_bat_dau'] as String),
       thoiGianKetThuc: DateTime.parse(json['thoi_gian_ket_thuc'] as String),

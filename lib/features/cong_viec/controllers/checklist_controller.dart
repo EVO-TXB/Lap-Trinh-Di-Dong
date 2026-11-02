@@ -128,15 +128,25 @@ class ChecklistController extends ChangeNotifier {
     }
   }
 
-  /// Thêm công việc mới vào danh sách
+  /// Thêm hoặc Cập nhật công việc trong danh sách
   Future<void> themCongViec(CongViecModel congViec) async {
-    try {
-      final CongViecModel created =
-          await _eventRepository.createCongViec(congViec);
-      _danhSachCongViec.add(created);
-    } catch (_) {
-      // Fallback chế độ chạy độc lập mock
-      _danhSachCongViec.add(congViec);
+    final int existingIndex = _danhSachCongViec.indexWhere((e) => e.id == congViec.id && congViec.id > 0);
+    if (existingIndex != -1) {
+      try {
+        final CongViecModel updated = await _eventRepository.updateCongViec(congViec);
+        _danhSachCongViec[existingIndex] = updated;
+      } catch (_) {
+        _danhSachCongViec[existingIndex] = congViec;
+      }
+    } else {
+      try {
+        final CongViecModel created =
+            await _eventRepository.createCongViec(congViec);
+        _danhSachCongViec.add(created);
+      } catch (_) {
+        // Fallback chế độ chạy độc lập mock
+        _danhSachCongViec.add(congViec);
+      }
     }
     _sapXepDanhSach();
     notifyListeners();

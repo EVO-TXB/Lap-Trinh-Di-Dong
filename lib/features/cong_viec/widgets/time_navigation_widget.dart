@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 
-/// Thanh điều hướng thời gian: "Tháng 10, 2026 (Tuần 42)", nút < >, nút "Hôm nay"
+/// Thanh điều hướng thời gian: bổ sung hiển thị ngày hôm nay bên cạnh Tháng Năm (Tuần 42), nút < >, nút "Hôm nay"
 class TimeNavigationWidget extends StatelessWidget {
   final String tieuDe;
+  final String? chuoiNgay;
   final VoidCallback onTuanTruoc;
   final VoidCallback onTuanSau;
   final VoidCallback onHomNay;
@@ -11,6 +12,7 @@ class TimeNavigationWidget extends StatelessWidget {
   const TimeNavigationWidget({
     super.key,
     required this.tieuDe,
+    this.chuoiNgay,
     required this.onTuanTruoc,
     required this.onTuanSau,
     required this.onHomNay,
@@ -22,7 +24,7 @@ class TimeNavigationWidget extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Row(
         children: [
-          // Tiêu đề tháng & tuần
+          // Tiêu đề ngày & tuần gọn gàng trên 1 dòng duy nhất: "13/10/2026 (Tuần 42)"
           Expanded(
             child: Text(
               tieuDe,
@@ -101,7 +103,7 @@ class TimeNavigationWidget extends StatelessWidget {
           padding: const EdgeInsets.all(4.0),
           child: Icon(
             icon,
-            size: 22,
+            size: 26,
             color: AppColors.darkNavy,
           ),
         ),

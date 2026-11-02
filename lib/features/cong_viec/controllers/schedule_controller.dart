@@ -60,6 +60,25 @@ class ScheduleController extends ChangeNotifier {
   int get cheDoXem => _cheDoXem;
   DateTime get thoiGianThuc => _thoiGianThuc;
 
+  /// Ngày hôm nay thực tế của hệ thống (mốc cố định: Thứ 3, 13/10/2026)
+  static final DateTime _ngayHomNayHeThong = DateTime(2026, 10, 13);
+  DateTime get ngayHomNayThucTe => _ngayHomNayHeThong;
+
+  /// Kiểm tra một ngày cụ thể có phải là ngày hôm nay thực tế hay không
+  bool laNgayHomNay(DateTime date) {
+    return date.year == _ngayHomNayHeThong.year &&
+           date.month == _ngayHomNayHeThong.month &&
+           date.day == _ngayHomNayHeThong.day;
+  }
+
+  /// Kiểm tra tuần đang xem có chứa ngày hôm nay thực tế hay không
+  bool get tuanDangXemChuaHomNay {
+    final DateTime dauTuanHomNay = _tinhNgayDauTuan(_ngayHomNayHeThong);
+    return dauTuanHomNay.year == _ngayDauTuan.year &&
+           dauTuanHomNay.month == _ngayDauTuan.month &&
+           dauTuanHomNay.day == _ngayDauTuan.day;
+  }
+
   /// Tính ngày Thứ Hai đầu tuần của một ngày bất kỳ
   DateTime _tinhNgayDauTuan(DateTime date) {
     final int weekday = date.weekday; // 1 = Monday, 7 = Sunday
@@ -240,10 +259,17 @@ class ScheduleController extends ChangeNotifier {
 
   int get phanTramHoanThanh => (tiLeHoanThanh * 100).round();
 
-  // Chuỗi tiêu đề tuần (Ví dụ: "Tháng 10, 2026 (Tuần 42)")
+  // Chuỗi tiêu đề tuần gọn gàng trên 1 dòng duy nhất, không ghi thứ (Ví dụ: "13/10/2026 (Tuần 42)")
   String get tieuDeTuan {
     final int tuanSo = _tinhSoTuanTrongNam(_ngayDauTuan);
-    return 'Tháng ${_ngayDauTuan.month}, ${_ngayDauTuan.year} (Tuần $tuanSo)';
+    final String ngayStr =
+        '${_ngayHienTai.day.toString().padLeft(2, '0')}/${_ngayHienTai.month.toString().padLeft(2, '0')}/${_ngayHienTai.year}';
+    return '$ngayStr (Tuần $tuanSo)';
+  }
+
+  /// Chuỗi ngày hiện tại (định dạng dd/MM/yyyy không ghi thứ): ví dụ "13/10/2026"
+  String get chuoiNgayHienTai {
+    return '${_ngayHienTai.day.toString().padLeft(2, '0')}/${_ngayHienTai.month.toString().padLeft(2, '0')}/${_ngayHienTai.year}';
   }
 
   /// Thuật toán tính số tuần ISO trong năm
@@ -271,21 +297,25 @@ class ScheduleController extends ChangeNotifier {
 
   Future<void> luuCongViec(CongViecModel congViec) async {
     if (congViec.id <= 0) {
-      final CongViecModel created = await _eventRepository.createCongViec(congViec);
-      _danhSachCongViec.add(created);
+      await _eventRepository.createCongViec(congViec);
     } else {
-      final CongViecModel updated = await _eventRepository.updateCongViec(congViec);
-      final int index = _danhSachCongViec.indexWhere((e) => e.id == congViec.id);
-      if (index != -1) {
-        _danhSachCongViec[index] = updated;
-      }
+      await _eventRepository.updateCongViec(congViec);
     }
-    notifyListeners();
+    await loadDanhSachCongViec();
   }
 
   Future<void> xoaCongViec(int id) async {
     await _eventRepository.deleteCongViec(id);
-    _danhSachCongViec.removeWhere((e) => e.id == id);
-    notifyListeners();
+    await loadDanhSachCongViec();
+  }
+
+  Future<void> luuChuoiCongViec(List<CongViecModel> batch) async {
+    await _eventRepository.createDanhSachCongViec(batch);
+    await loadDanhSachCongViec();
+  }
+
+  Future<void> xoaChuoiCongViec(String maChuoiLap) async {
+    await _eventRepository.deleteChuoiCongViec(maChuoiLap);
+    await loadDanhSachCongViec();
   }
 }

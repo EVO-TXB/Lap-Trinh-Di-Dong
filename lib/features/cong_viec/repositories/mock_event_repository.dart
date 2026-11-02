@@ -355,10 +355,85 @@ class MockEventRepository implements IEventRepository {
   }
 
   @override
+  Future<List<CongViecModel>> getDanhSachCongViecTheoNgay(DateTime ngay) async {
+    await Future.delayed(const Duration(milliseconds: 60));
+    return _danhSachMock.where((congViec) {
+      return congViec.thoiGianBatDau.year == ngay.year &&
+             congViec.thoiGianBatDau.month == ngay.month &&
+             congViec.thoiGianBatDau.day == ngay.day;
+    }).toList();
+  }
+
+  @override
+  Future<List<CongViecModel>> getAllCongViec() async {
+    await Future.delayed(const Duration(milliseconds: 60));
+    return List.from(_danhSachMock);
+  }
+
+  @override
+  Future<List<CongViecModel>> createDanhSachCongViec(List<CongViecModel> danhSach) async {
+    await Future.delayed(const Duration(milliseconds: 60));
+    int currentMaxId = _danhSachMock.isEmpty ? 0 : _danhSachMock.map((e) => e.id).reduce((a, b) => a > b ? a : b);
+    final List<CongViecModel> ketQua = [];
+    for (final cv in danhSach) {
+      currentMaxId++;
+      final CongViecModel newItem = cv.copyWith(id: currentMaxId);
+      _danhSachMock.add(newItem);
+      ketQua.add(newItem);
+    }
+    return ketQua;
+  }
+
+  @override
+  Future<List<CongViecModel>> updateChuoiCongViec(String maChuoiLap, CongViecModel mauCapNhat) async {
+    await Future.delayed(const Duration(milliseconds: 60));
+    final List<CongViecModel> ketQua = [];
+    for (int i = 0; i < _danhSachMock.length; i++) {
+      final cv = _danhSachMock[i];
+      if (cv.maChuoiLap == maChuoiLap || cv.maQuyTacLap?.toString() == maChuoiLap) {
+        final DateTime batDauMoi = DateTime(
+          cv.thoiGianBatDau.year,
+          cv.thoiGianBatDau.month,
+          cv.thoiGianBatDau.day,
+          mauCapNhat.thoiGianBatDau.hour,
+          mauCapNhat.thoiGianBatDau.minute,
+        );
+        final DateTime ketThucMoi = DateTime(
+          cv.thoiGianKetThuc.year,
+          cv.thoiGianKetThuc.month,
+          cv.thoiGianKetThuc.day,
+          mauCapNhat.thoiGianKetThuc.hour,
+          mauCapNhat.thoiGianKetThuc.minute,
+        );
+
+        final CongViecModel updated = cv.copyWith(
+          tenCongViec: mauCapNhat.tenCongViec,
+          loaiSuKien: mauCapNhat.loaiSuKien,
+          laThietYeu: mauCapNhat.laThietYeu,
+          diaDiem: mauCapNhat.diaDiem,
+          thoiGianBatDau: batDauMoi,
+          thoiGianKetThuc: ketThucMoi,
+        );
+        _danhSachMock[i] = updated;
+        ketQua.add(updated);
+      }
+    }
+    return ketQua;
+  }
+
+  @override
   Future<bool> deleteCongViec(int id) async {
     await Future.delayed(const Duration(milliseconds: 60));
     final int initialLength = _danhSachMock.length;
     _danhSachMock.removeWhere((e) => e.id == id);
+    return _danhSachMock.length < initialLength;
+  }
+
+  @override
+  Future<bool> deleteChuoiCongViec(String maChuoiLap) async {
+    await Future.delayed(const Duration(milliseconds: 60));
+    final int initialLength = _danhSachMock.length;
+    _danhSachMock.removeWhere((e) => e.maChuoiLap == maChuoiLap || e.maQuyTacLap?.toString() == maChuoiLap);
     return _danhSachMock.length < initialLength;
   }
 

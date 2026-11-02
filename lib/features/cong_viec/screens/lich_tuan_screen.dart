@@ -89,8 +89,11 @@ class _LichTuanViewState extends State<_LichTuanView> {
     EventDetailDialog.show(
       context,
       congViec: congViec,
+      danhSachHienCo: controller.danhSachCongViec,
       onSave: (updated) => controller.luuCongViec(updated),
       onDelete: (id) => controller.xoaCongViec(id),
+      onSaveBatch: (batch) => controller.luuChuoiCongViec(batch),
+      onDeleteSeries: (maChuoi) => controller.xoaChuoiCongViec(maChuoi),
     );
   }
 
@@ -112,8 +115,11 @@ class _LichTuanViewState extends State<_LichTuanView> {
     EventDetailDialog.show(
       context,
       congViec: newEvent,
+      danhSachHienCo: controller.danhSachCongViec,
       onSave: (created) => controller.luuCongViec(created),
       onDelete: (_) {},
+      onSaveBatch: (batch) => controller.luuChuoiCongViec(batch),
+      onDeleteSeries: (maChuoi) => controller.xoaChuoiCongViec(maChuoi),
     );
   }
 
@@ -196,7 +202,7 @@ class _LichTuanViewState extends State<_LichTuanView> {
                       coThongBaoMoi: DichVuThongBao.instance.lichSuThongBao.isNotEmpty,
                     ),
 
-                    // B. Thanh điều hướng thời gian: "Tháng 10, 2026 (Tuần 42)", < >, "Hôm nay"
+                    // B. Thanh điều hướng thời gian: 1 dòng duy nhất "13/10/2026 (Tuần 42)", < >, "Hôm nay"
                     TimeNavigationWidget(
                       tieuDe: controller.tieuDeTuan,
                       onTuanTruoc: controller.chuyenTuanTruoc,
