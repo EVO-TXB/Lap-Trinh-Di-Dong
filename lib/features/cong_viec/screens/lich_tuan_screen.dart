@@ -11,8 +11,9 @@ import '../widgets/progress_card_widget.dart';
 import '../widgets/time_navigation_widget.dart';
 import '../widgets/view_switcher_widget.dart';
 import '../widgets/weekly_grid_widget.dart';
+import 'month_calendar_view.dart';
 
-/// Màn hình chính Lịch Trình Tuần (Weekly Schedule Screen)
+/// Màn hình chính Lịch Trình (Schedule Screen) hỗ trợ chuyển đổi Lịch Tuần & Lịch Tháng
 class LichTuanScreen extends StatelessWidget {
   const LichTuanScreen({super.key});
 
@@ -50,6 +51,42 @@ class _LichTuanView extends StatelessWidget {
     );
   }
 
+  Widget _buildWeeklyView(BuildContext context, ScheduleController controller) {
+    return Column(
+      key: const ValueKey('WeeklyScheduleView'),
+      children: [
+        // B1. Thanh điều hướng thời gian tuần: "Tháng 10, 2026 (Tuần 42)", < >, "Hôm nay"
+        TimeNavigationWidget(
+          tieuDe: controller.tieuDeTuan,
+          onTuanTruoc: controller.chuyenTuanTruoc,
+          onTuanSau: controller.chuyenTuanSau,
+          onHomNay: controller.chuyenDenHomNay,
+        ),
+
+        // B2. Widget tiến độ ngày (Progress Card: 5/8 việc đã xong (62%))
+        ProgressCardWidget(
+          tongSoViec: controller.tongSoViecHomNay,
+          soViecDaXong: controller.soViecDaXongHomNay,
+          tiLe: controller.tiLeHoanThanh,
+          phanTram: controller.phanTramHoanThanh,
+        ),
+
+        // B3. Lưới thời gian (Weekly Time Grid - Nền bán trong suốt để họa tiết xuyên qua)
+        Expanded(
+          child: controller.isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.sageGreen,
+                  ),
+                )
+              : WeeklyGridWidget(
+                  controller: controller,
+                ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ScheduleController>(
@@ -58,7 +95,7 @@ class _LichTuanView extends StatelessWidget {
           body: Stack(
             children: [
               // 1. Toàn bộ họa tiết nền hữu cơ (Organic Waves) uốn lượn xuyên suốt từ trên xuống dưới
-              // và xuyên qua bên dưới Lưới lịch trình (Weekly Grid)
+              // và xuyên qua bên dưới Lưới lịch trình (Weekly Grid / Monthly Grid)
               const Positioned.fill(
                 child: CustomPaint(
                   painter: BackgroundWavePainter(),
@@ -84,49 +121,36 @@ class _LichTuanView extends StatelessWidget {
                       onAvatar: () {},
                     ),
 
-                    // B. Thanh điều hướng thời gian: "Tháng 10, 2026 (Tuần 42)", < >, "Hôm nay"
-                    TimeNavigationWidget(
-                      tieuDe: controller.tieuDeTuan,
-                      onTuanTruoc: controller.chuyenTuanTruoc,
-                      onTuanSau: controller.chuyenTuanSau,
-                      onHomNay: controller.chuyenDenHomNay,
-                    ),
-
-                    // C. Bộ chuyển đổi View: Segmented control [ Lịch tuần | Lịch tháng ]
+                    // B. Bộ chuyển đổi View: Segmented control [ Lịch tuần | Lịch tháng ]
                     ViewSwitcherWidget(
                       selectedIndex: controller.cheDoXem,
                       onIndexChanged: (index) {
                         controller.doiCheDoXem(index);
-                        if (index == 1) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Chế độ Lịch tháng đang được chuẩn bị trong giai đoạn tiếp theo!'),
-                              duration: Duration(seconds: 1),
-                            ),
-                          );
-                        }
                       },
                     ),
 
-                    // D. Widget tiến độ ngày (Progress Card: 5/8 việc đã xong (62%))
-                    ProgressCardWidget(
-                      tongSoViec: controller.tongSoViecHomNay,
-                      soViecDaXong: controller.soViecDaXongHomNay,
-                      tiLe: controller.tiLeHoanThanh,
-                      phanTram: controller.phanTramHoanThanh,
-                    ),
-
-                    // E. Lưới thời gian (Weekly Time Grid - Nền bán trong suốt để họa tiết xuyên qua)
+                    // C. Khu vực hiển thị chuyển đổi mượt mà (Fade & Slide transition)
                     Expanded(
-                      child: controller.isLoading
-                          ? const Center(
-                              child: CircularProgressIndicator(
-                                color: AppColors.sageGreen,
-                              ),
-                            )
-                          : WeeklyGridWidget(
-                              controller: controller,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 320),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeInCubic,
+                        transitionBuilder: (child, animation) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0.0, 0.02),
+                                end: Offset.zero,
+                              ).animate(animation),
+                              child: child,
                             ),
+                          );
+                        },
+                        child: controller.cheDoXem == 0
+                            ? _buildWeeklyView(context, controller)
+                            : const MonthCalendarView(key: ValueKey('MonthCalendarView')),
+                      ),
                     ),
                   ],
                 ),

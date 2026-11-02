@@ -7,6 +7,12 @@ abstract class IEventRepository {
     required DateTime ngayDauTuan,
   });
 
+  /// Lấy danh sách công việc theo tháng
+  Future<List<CongViecModel>> getDanhSachCongViecTheoThang({
+    required int nam,
+    required int thang,
+  });
+
   /// Tạo mới công việc
   Future<CongViecModel> createCongViec(CongViecModel congViec);
 
