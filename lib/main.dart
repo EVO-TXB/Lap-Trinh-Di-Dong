@@ -3,10 +3,12 @@ import 'package:provider/provider.dart';
 import 'core/bo_nho/bo_nho_dich_vu.dart';
 import 'core/mang/api_client.dart';
 import 'core/constants/app_colors.dart';
+import 'core/thong_bao/dich_vu_thong_bao.dart';
 import 'features/xac_thuc/providers/auth_controller.dart';
 import 'features/xac_thuc/repositories/auth_repository_impl.dart';
 import 'features/xac_thuc/screens/dang_nhap_screen.dart';
 import 'features/cong_viec/screens/lich_tuan_screen.dart';
+import 'features/thong_bao/controllers/thong_bao_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,12 +21,20 @@ void main() async {
     boNho: boNhoDichVu,
   );
 
+  // Khởi tạo dịch vụ thông báo
+  await DichVuThongBao.instance.khoiTao(boNhoDichVu);
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(
           create: (_) => AuthController(
             authRepository: authRepository,
+            boNhoDichVu: boNhoDichVu,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ThongBaoController(
             boNhoDichVu: boNhoDichVu,
           ),
         ),
