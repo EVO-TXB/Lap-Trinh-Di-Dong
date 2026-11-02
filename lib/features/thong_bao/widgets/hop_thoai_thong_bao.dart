@@ -118,12 +118,12 @@ class HopThoaiThongBao extends StatelessWidget {
                         Icon(Icons.notifications_none_rounded, size: 48, color: Colors.grey.shade300),
                         const SizedBox(height: 10),
                         const Text(
-                          'Chưa có thông báo nào trong phiên này',
-                          style: TextStyle(color: Color(0xFF64748B), fontSize: 14),
+                          'Chưa có thông báo nào',
+                          style: TextStyle(color: Color(0xFF64748B), fontSize: 14, fontWeight: FontWeight.w500),
                         ),
                         const SizedBox(height: 4),
                         const Text(
-                          'Hệ thống đang quét ngầm mỗi phút để nhắc việc sắp tới',
+                          'Chưa có thông báo mới nhất',
                           style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
                           textAlign: TextAlign.center,
                         ),
