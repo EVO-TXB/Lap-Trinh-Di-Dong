@@ -129,6 +129,9 @@ class ChecklistController extends ChangeNotifier {
   }
 
   /// Thêm hoặc Cập nhật công việc trong danh sách
+  /// Cập nhật công việc
+  Future<void> capNhatCongViec(CongViecModel congViec) => themCongViec(congViec);
+
   Future<void> themCongViec(CongViecModel congViec) async {
     final int existingIndex = _danhSachCongViec.indexWhere((e) => e.id == congViec.id && congViec.id > 0);
     if (existingIndex != -1) {
@@ -166,6 +169,48 @@ class ChecklistController extends ChangeNotifier {
     } catch (e) {
       _danhSachCongViec.insert(index, biXoa);
       _thongBaoLoi = 'Lỗi khi xóa: $e';
+      notifyListeners();
+    }
+  }
+
+  /// Cập nhật chuỗi công việc lặp lại
+  Future<void> capNhatChuoiCongViec({
+    required String maChuoiLap,
+    required CongViecModel mau,
+    List<CongViecModel>? danhSachMoiNeuDoiLich,
+  }) async {
+    try {
+      if (danhSachMoiNeuDoiLich != null && danhSachMoiNeuDoiLich.isNotEmpty) {
+        await _eventRepository.deleteChuoiCongViec(maChuoiLap);
+        await _eventRepository.createDanhSachCongViec(danhSachMoiNeuDoiLich);
+      } else {
+        await _eventRepository.updateChuoiCongViec(maChuoiLap, mau);
+      }
+      await loadDanhSachCongViec();
+    } catch (e) {
+      _thongBaoLoi = 'Lỗi cập nhật chuỗi: $e';
+      notifyListeners();
+    }
+  }
+
+  /// Xóa chuỗi công việc lặp lại
+  Future<void> xoaChuoiCongViec(String maChuoiLap) async {
+    try {
+      await _eventRepository.deleteChuoiCongViec(maChuoiLap);
+      await loadDanhSachCongViec();
+    } catch (e) {
+      _thongBaoLoi = 'Lỗi xóa chuỗi: $e';
+      notifyListeners();
+    }
+  }
+
+  /// Lưu chuỗi công việc lặp lại
+  Future<void> luuChuoiCongViec(List<CongViecModel> batch) async {
+    try {
+      await _eventRepository.createDanhSachCongViec(batch);
+      await loadDanhSachCongViec();
+    } catch (e) {
+      _thongBaoLoi = 'Lỗi lưu chuỗi: $e';
       notifyListeners();
     }
   }

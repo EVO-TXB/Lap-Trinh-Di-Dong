@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../cai_dat/controllers/settings_controller.dart';
 import '../../../core/thong_bao/dich_vu_thong_bao.dart';
 import '../../thong_bao/widgets/hop_thoai_thong_bao.dart';
 import '../controllers/checklist_controller.dart';
@@ -69,8 +70,16 @@ class _ChecklistScreenView extends StatelessWidget {
     EventDetailDialog.show(
       context,
       congViec: newEvent,
+      danhSachHienCo: controller.danhSachCongViec,
       onSave: (created) => controller.themCongViec(created),
       onDelete: (_) {},
+      onSaveBatch: (batch) => controller.luuChuoiCongViec(batch),
+      onDeleteSeries: (maChuoi) => controller.xoaChuoiCongViec(maChuoi),
+      onUpdateSeries: (maChuoi, mau, batch) => controller.capNhatChuoiCongViec(
+        maChuoiLap: maChuoi,
+        mau: mau,
+        danhSachMoiNeuDoiLich: batch,
+      ),
     );
   }
 
@@ -82,23 +91,40 @@ class _ChecklistScreenView extends StatelessWidget {
     EventDetailDialog.show(
       context,
       congViec: congViec,
-      onSave: (updated) => controller.themCongViec(updated),
+      danhSachHienCo: controller.danhSachCongViec,
+      onSave: (updated) => controller.capNhatCongViec(updated),
       onDelete: (id) => controller.xoaCongViec(id),
+      onSaveBatch: (batch) => controller.luuChuoiCongViec(batch),
+      onDeleteSeries: (maChuoi) => controller.xoaChuoiCongViec(maChuoi),
+      onUpdateSeries: (maChuoi, mau, batch) => controller.capNhatChuoiCongViec(
+        maChuoiLap: maChuoi,
+        mau: mau,
+        danhSachMoiNeuDoiLich: batch,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    SettingsController? settings;
+    try {
+      settings = context.watch<SettingsController>();
+    } catch (_) {
+      settings = null;
+    }
+
+    final bool isDark = settings?.isDarkMode ?? false;
+    final String ngonNgu = settings?.ngonNgu ?? 'Tiếng Việt';
     final controller = context.watch<ChecklistController>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF7F5),
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFFFF7F5),
       body: Stack(
         children: [
-          // 1. Nền uốn lượn Gradient màu đào pastel phía trên
+          // 1. Nền trang trí màu đào / Dark Slate ở phía trên
           Positioned.fill(
             child: CustomPaint(
-              painter: _ChecklistTopWavePainter(),
+              painter: _ChecklistTopWavePainter(isDark: isDark),
             ),
           ),
 
@@ -107,7 +133,7 @@ class _ChecklistScreenView extends StatelessWidget {
             child: Column(
               children: [
                 // A. Header: Nút back, Logo Timass, chuông thông báo, avatar
-                _buildHeader(context),
+                _buildHeader(context, isDark: isDark),
 
                 // B. Danh sách cuộn chứa Tiêu đề, Card tiến độ & Checklist
                 Expanded(
@@ -124,22 +150,24 @@ class _ChecklistScreenView extends StatelessWidget {
                           ),
                           children: [
                             // Tiêu đề lớn & Ngày tháng
-                            _buildTitleSection(controller),
+                            _buildTitleSection(controller, isDark: isDark, settings: settings),
 
                             const SizedBox(height: 18),
 
                             // Thanh tiến độ tổng quan (Progress Card)
-                            _buildProgressOverviewCard(controller),
+                            _buildProgressOverviewCard(controller, isDark: isDark, settings: settings),
 
                             const SizedBox(height: 20),
 
                             // Danh sách các công việc
                             if (controller.danhSachCongViec.isEmpty)
-                              _buildEmptyState(context, controller)
+                              _buildEmptyState(context, controller, isDark: isDark, settings: settings)
                             else
                               for (final cv in controller.danhSachCongViec)
                                 ChecklistItemWidget(
                                   congViec: cv,
+                                  isDark: isDark,
+                                  ngonNgu: ngonNgu,
                                   onToggle: (id) =>
                                       controller.toggleComplete(id),
                                   onTap: () => _moDialogSuaCongViec(
@@ -155,7 +183,7 @@ class _ChecklistScreenView extends StatelessWidget {
                 ),
 
                 // C. Footer: Dòng hướng dẫn & Nút to "Thêm công việc"
-                _buildFooter(context, controller),
+                _buildFooter(context, controller, isDark: isDark, settings: settings),
               ],
             ),
           ),
@@ -165,7 +193,7 @@ class _ChecklistScreenView extends StatelessWidget {
   }
 
   /// 1. Header chuẩn mẫu: Nút back `<`, Logo Timass, Icon chuông, Avatar
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, {required bool isDark}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
       child: Row(
@@ -176,12 +204,12 @@ class _ChecklistScreenView extends StatelessWidget {
             child: InkWell(
               onTap: () => Navigator.of(context).maybePop(),
               borderRadius: BorderRadius.circular(20),
-              child: const Padding(
-                padding: EdgeInsets.all(8.0),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
                 child: Icon(
                   Icons.arrow_back_ios_new_rounded,
                   size: 20,
-                  color: AppColors.darkNavy,
+                  color: isDark ? Colors.white : AppColors.darkNavy,
                 ),
               ),
             ),
@@ -207,12 +235,12 @@ class _ChecklistScreenView extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               child: Stack(
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.all(8.0),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
                     child: Icon(
                       Icons.notifications_none_rounded,
                       size: 24,
-                      color: AppColors.darkNavy,
+                      color: isDark ? Colors.white : AppColors.darkNavy,
                     ),
                   ),
                   if (DichVuThongBao.instance.lichSuThongBao.isNotEmpty)
@@ -243,7 +271,7 @@ class _ChecklistScreenView extends StatelessWidget {
               shape: BoxShape.circle,
               color: AppColors.sageGreen.withValues(alpha: 0.2),
               border: Border.all(
-                color: Colors.white,
+                color: isDark ? const Color(0xFF334155) : Colors.white,
                 width: 1.5,
               ),
               boxShadow: [
@@ -254,11 +282,11 @@ class _ChecklistScreenView extends StatelessWidget {
                 ),
               ],
             ),
-            child: const ClipOval(
+            child: ClipOval(
               child: Center(
                 child: Icon(
                   Icons.person_rounded,
-                  color: AppColors.darkNavy,
+                  color: isDark ? Colors.white : AppColors.darkNavy,
                   size: 22,
                 ),
               ),
@@ -270,16 +298,21 @@ class _ChecklistScreenView extends StatelessWidget {
   }
 
   /// 2. Tiêu đề lớn "Danh sách công việc hôm nay" và dòng phụ ngày tháng
-  Widget _buildTitleSection(ChecklistController controller) {
+  Widget _buildTitleSection(
+    ChecklistController controller, {
+    required bool isDark,
+    SettingsController? settings,
+  }) {
+    final title = settings?.tr('today_task_checklist') ?? 'Danh sách công việc\nhôm nay';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Danh sách công việc\nhôm nay',
+        Text(
+          title,
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w900,
-            color: AppColors.darkNavy,
+            color: isDark ? Colors.white : AppColors.darkNavy,
             height: 1.22,
             letterSpacing: -0.6,
           ),
@@ -287,10 +320,10 @@ class _ChecklistScreenView extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           controller.chuoiNgayHienThi,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF64748B),
+            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
             letterSpacing: -0.2,
           ),
         ),
@@ -299,15 +332,25 @@ class _ChecklistScreenView extends StatelessWidget {
   }
 
   /// 3. Thanh tiến độ tổng quan: "5/8 việc đã hoàn thành" - "65%", ProgressBar bo góc
-  Widget _buildProgressOverviewCard(ChecklistController controller) {
+  Widget _buildProgressOverviewCard(
+    ChecklistController controller, {
+    required bool isDark,
+    SettingsController? settings,
+  }) {
+    final progressText = settings?.tr('tasks_completed_count', params: {
+      'done': controller.soViecDaHoanThanh.toString(),
+      'total': controller.tongSoViec.toString(),
+    }) ?? '${controller.soViecDaHoanThanh}/${controller.tongSoViec} việc đã hoàn thành';
+
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(18),
+        border: isDark ? Border.all(color: const Color(0xFF334155)) : null,
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1E1B4B).withValues(alpha: 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -321,20 +364,20 @@ class _ChecklistScreenView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                '${controller.soViecDaHoanThanh}/${controller.tongSoViec} việc đã hoàn thành',
-                style: const TextStyle(
+                progressText,
+                style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.darkNavy,
+                  color: isDark ? Colors.white : AppColors.darkNavy,
                   letterSpacing: -0.3,
                 ),
               ),
               Text(
                 '${controller.phanTramHoanThanh}%',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 17.5,
                   fontWeight: FontWeight.w900,
-                  color: AppColors.darkNavy,
+                  color: isDark ? Colors.white : AppColors.darkNavy,
                   letterSpacing: -0.3,
                 ),
               ),
@@ -354,7 +397,7 @@ class _ChecklistScreenView extends StatelessWidget {
                 return LinearProgressIndicator(
                   value: value,
                   minHeight: 10,
-                  backgroundColor: const Color(0xFFE5E7EB),
+                  backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFE5E7EB),
                   valueColor: const AlwaysStoppedAnimation<Color>(
                     AppColors.sageGreen,
                   ),
@@ -368,37 +411,45 @@ class _ChecklistScreenView extends StatelessWidget {
   }
 
   /// 4. Footer: Hướng dẫn và Nút to nổi bật "Thêm công việc"
-  Widget _buildFooter(BuildContext context, ChecklistController controller) {
+  Widget _buildFooter(
+    BuildContext context,
+    ChecklistController controller, {
+    required bool isDark,
+    SettingsController? settings,
+  }) {
+    final instruction = settings?.tr('checklist_instruction') ??
+        'Tích vào ô tròn để đánh dấu hoàn thành nhanh';
+    final addLabel = settings?.tr('add_task') ?? 'Thêm công việc';
+
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF7F5).withValues(alpha: 0.95),
+        color: isDark
+            ? const Color(0xFF0F172A).withValues(alpha: 0.95)
+            : const Color(0xFFFFF7F5).withValues(alpha: 0.95),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Đường gạch ngăn cách mỏng phía trên
-          const Divider(
+          Divider(
             height: 1,
             thickness: 1,
-            color: Color(0xFFE5E7EB),
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE5E7EB),
           ),
           const SizedBox(height: 10),
 
-          // Dòng hướng dẫn
-          const Text(
-            'Tích vào ô tròn để đánh dấu hoàn thành nhanh',
+          Text(
+            instruction,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13.5,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF64748B),
+              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
             ),
           ),
 
           const SizedBox(height: 12),
 
-          // Nút to nổi bật "Thêm công việc" màu Sage green
           SizedBox(
             width: double.infinity,
             height: 52,
@@ -412,9 +463,9 @@ class _ChecklistScreenView extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              child: const Text(
-                'Thêm công việc',
-                style: TextStyle(
+              child: Text(
+                addLabel,
+                style: const TextStyle(
                   fontSize: 16.5,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.2,
@@ -430,8 +481,12 @@ class _ChecklistScreenView extends StatelessWidget {
   /// Empty state khi ngày đó chưa có việc nào
   Widget _buildEmptyState(
     BuildContext context,
-    ChecklistController controller,
-  ) {
+    ChecklistController controller, {
+    required bool isDark,
+    SettingsController? settings,
+  }) {
+    final emptyMsg = settings?.tr('empty_checklist') ?? 'Không có công việc nào trong danh sách';
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
       alignment: Alignment.center,
@@ -443,12 +498,12 @@ class _ChecklistScreenView extends StatelessWidget {
             color: AppColors.sageGreen.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Không có công việc nào trong danh sách',
+          Text(
+            emptyMsg,
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF64748B),
+              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
             ),
           ),
         ],
@@ -459,15 +514,19 @@ class _ChecklistScreenView extends StatelessWidget {
 
 /// Painter vẽ đường sóng Gradient màu đào ở vùng trên của màn hình
 class _ChecklistTopWavePainter extends CustomPainter {
+  final bool isDark;
+
+  const _ChecklistTopWavePainter({this.isDark = false});
+
   @override
   void paint(Canvas canvas, Size size) {
     final Rect rect = Offset.zero & size;
 
     // Lớp nền mềm mại
-    final Paint bgPaint = Paint()..color = const Color(0xFFFFF7F5);
+    final Paint bgPaint = Paint()..color = isDark ? const Color(0xFF0F172A) : const Color(0xFFFFF7F5);
     canvas.drawRect(rect, bgPaint);
 
-    // Mảng màu đào ấm áp ở phần trên (Header và Tiêu đề)
+    // Mảng màu đào ấm áp / Dark Slate ở phần trên
     final Path wavePath = Path();
     wavePath.moveTo(0, 0);
     wavePath.lineTo(size.width, 0);
@@ -483,21 +542,27 @@ class _ChecklistTopWavePainter extends CustomPainter {
     wavePath.close();
 
     final Paint wavePaint = Paint()
-      ..shader = const LinearGradient(
+      ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [
-          Color(0xFFFFD4CC),
-          Color(0xFFFFE5DE),
-          Color(0xFFFFF7F5),
-        ],
-        stops: [0.0, 0.65, 1.0],
+        colors: isDark
+            ? const [
+                Color(0xFF1E293B),
+                Color(0xFF152033),
+                Color(0xFF0F172A),
+              ]
+            : const [
+                Color(0xFFFFD4CC),
+                Color(0xFFFFE5DE),
+                Color(0xFFFFF7F5),
+              ],
+        stops: const [0.0, 0.65, 1.0],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height * 0.32));
 
     canvas.drawPath(wavePath, wavePaint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _ChecklistTopWavePainter oldDelegate) =>
+      oldDelegate.isDark != isDark;
 }
-

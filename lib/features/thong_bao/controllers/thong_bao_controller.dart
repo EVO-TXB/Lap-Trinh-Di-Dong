@@ -1,3 +1,5 @@
+import 'package:provider/provider.dart';
+import '../../cai_dat/controllers/settings_controller.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/bo_nho/bo_nho_dich_vu.dart';
@@ -83,9 +85,14 @@ class ThongBaoController extends ChangeNotifier {
       onXemChiTiet: onXemChiTiet,
       onHoanBaoSnooze: () {
         _dichVuThongBao.hoanBaoSnooze(congViec.id, soPhut: 5);
+        String msg = 'Đã hoãn nhắc nhở "${congViec.tenCongViec}" thêm 5 phút.';
+        try {
+          final settings = Provider.of<SettingsController>(context, listen: false);
+          msg = settings.tr('snoozed_msg', params: {'name': congViec.tenCongViec});
+        } catch (_) {}
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Đã hoãn nhắc nhở "${congViec.tenCongViec}" thêm 5 phút.'),
+            content: Text(msg),
             duration: const Duration(seconds: 2),
           ),
         );

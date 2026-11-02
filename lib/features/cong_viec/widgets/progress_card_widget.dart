@@ -3,12 +3,19 @@ import '../../../core/constants/app_colors.dart';
 
 /// Widget tiến độ ngày (Progress Card): "Hôm nay: 5/8 việc đã xong (62%)",
 /// thanh tròn Radial Progress và chú thích màu (Chủ động, Bị động, Đã hoàn thành)
+/// Hỗ trợ Dark Mode và Đa ngôn ngữ
 class ProgressCardWidget extends StatelessWidget {
   final int tongSoViec;
   final int soViecDaXong;
   final double tiLe;
   final int phanTram;
   final VoidCallback? onTap;
+  final bool isDark;
+  final String? textHomNayViec;
+  final String? textDaXong;
+  final String? labelChuDong;
+  final String? labelBiDong;
+  final String? labelHoanThanh;
 
   const ProgressCardWidget({
     super.key,
@@ -17,6 +24,12 @@ class ProgressCardWidget extends StatelessWidget {
     required this.tiLe,
     required this.phanTram,
     this.onTap,
+    this.isDark = false,
+    this.textHomNayViec,
+    this.textDaXong,
+    this.labelChuDong,
+    this.labelBiDong,
+    this.labelHoanThanh,
   });
 
   @override
@@ -24,7 +37,7 @@ class ProgressCardWidget extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Material(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         elevation: 0,
         child: InkWell(
@@ -36,12 +49,12 @@ class ProgressCardWidget extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: Colors.black.withValues(alpha: 0.03),
+                color: isDark ? const Color(0xFF334155) : Colors.black.withValues(alpha: 0.03),
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
+                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
                   blurRadius: 10,
                   offset: const Offset(0, 3),
                 ),
@@ -57,22 +70,22 @@ class ProgressCardWidget extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Hôm nay: $soViecDaXong/$tongSoViec việc',
-                        style: const TextStyle(
+                        textHomNayViec ?? 'Hôm nay: $soViecDaXong/$tongSoViec việc',
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textDark,
+                          color: isDark ? const Color(0xFFF1F5F9) : AppColors.textDark,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Row(
                         children: [
                           Text(
-                            'đã xong ($phanTram%)',
-                            style: const TextStyle(
+                            textDaXong ?? 'đã xong ($phanTram%)',
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.textDark,
+                              color: isDark ? const Color(0xFFF1F5F9) : AppColors.textDark,
                             ),
                           ),
                           if (onTap != null) ...[
@@ -103,7 +116,7 @@ class ProgressCardWidget extends StatelessWidget {
                         child: CircularProgressIndicator(
                           value: tiLe.clamp(0.0, 1.0),
                           strokeWidth: 6.5,
-                          backgroundColor: AppColors.progressTrack,
+                          backgroundColor: isDark ? const Color(0xFF334155) : AppColors.progressTrack,
                           valueColor: const AlwaysStoppedAnimation<Color>(
                             AppColors.progressCircle,
                           ),
@@ -125,17 +138,17 @@ class ProgressCardWidget extends StatelessWidget {
                     children: [
                       _buildLegendItem(
                         color: AppColors.activeBlueLegend,
-                        label: 'Công việc chủ động',
+                        label: labelChuDong ?? 'Công việc chủ động',
                       ),
                       const SizedBox(height: 4),
                       _buildLegendItem(
                         color: AppColors.passiveOrangeLegend,
-                        label: 'Thiết yếu / Bị động',
+                        label: labelBiDong ?? 'Thiết yếu / Bị động',
                       ),
                       const SizedBox(height: 4),
                       _buildLegendItem(
                         color: AppColors.completedGreenLegend,
-                        label: 'Đã hoàn thành',
+                        label: labelHoanThanh ?? 'Đã hoàn thành',
                       ),
                     ],
                   ),
@@ -167,10 +180,10 @@ class ProgressCardWidget extends StatelessWidget {
         Flexible(
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w500,
-              color: AppColors.textDark,
+              color: isDark ? const Color(0xFF94A3B8) : AppColors.textDark,
             ),
             overflow: TextOverflow.ellipsis,
           ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../cai_dat/controllers/settings_controller.dart';
 import '../controllers/event_form_controller.dart';
 import '../models/cong_viec_model.dart';
 import '../repositories/mock_event_repository.dart';
@@ -18,6 +19,7 @@ class EventFormBottomSheet extends StatefulWidget {
   final Future<void> Function(List<CongViecModel> batchEvents)? onSaveBatch;
   final Future<void> Function(int id)? onDeleteSingle;
   final Future<void> Function(String maChuoiLap)? onDeleteSeries;
+  final Future<void> Function(String maChuoiLap, CongViecModel mauCapNhat, List<CongViecModel>? danhSachMoi)? onUpdateSeries;
 
   const EventFormBottomSheet({
     super.key,
@@ -28,6 +30,7 @@ class EventFormBottomSheet extends StatefulWidget {
     this.onSaveBatch,
     this.onDeleteSingle,
     this.onDeleteSeries,
+    this.onUpdateSeries,
   });
 
   /// Hiển thị Modal Bottom Sheet dạng bo tròn trên nền mờ
@@ -40,7 +43,9 @@ class EventFormBottomSheet extends StatefulWidget {
     Future<void> Function(List<CongViecModel> batchEvents)? onSaveBatch,
     Future<void> Function(int id)? onDeleteSingle,
     Future<void> Function(String maChuoiLap)? onDeleteSeries,
+    Future<void> Function(String maChuoiLap, CongViecModel mauCapNhat, List<CongViecModel>? danhSachMoi)? onUpdateSeries,
   }) {
+    final list = danhSachHienCo ?? MockEventRepository().tatCaCongViecHienCo;
     return showModalBottomSheet<T>(
       context: context,
       isScrollControlled: true,
@@ -50,15 +55,17 @@ class EventFormBottomSheet extends StatefulWidget {
         create: (_) => EventFormController(
           congViecGoc: congViec,
           ngayMacDinh: ngayMacDinh,
+          danhSachHienCo: list,
         ),
         child: EventFormBottomSheet(
           congViec: congViec,
           ngayMacDinh: ngayMacDinh,
-          danhSachHienCo: danhSachHienCo,
+          danhSachHienCo: list,
           onSaveSingle: onSaveSingle,
           onSaveBatch: onSaveBatch,
           onDeleteSingle: onDeleteSingle,
           onDeleteSeries: onDeleteSeries,
+          onUpdateSeries: onUpdateSeries,
         ),
       ),
     );
@@ -104,24 +111,39 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
 
   // --- Date / Time Picker Handlers ---
 
-  Future<void> _chonNgayThucHien(BuildContext context, EventFormController controller) async {
+  Future<void> _chonNgayThucHien(
+    BuildContext context,
+    EventFormController controller, {
+    SettingsController? settings,
+  }) async {
+    final bool isDark = settings?.isDarkMode ?? false;
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: controller.ngayThucHien,
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
-      helpText: 'CHỌN NGÀY THỰC HIỆN',
-      cancelText: 'HỦY',
-      confirmText: 'CHỌN',
+      helpText: settings?.tr('select_date_title') ?? 'CHỌN NGÀY THỰC HIỆN',
+      cancelText: settings?.tr('picker_cancel') ?? 'HỦY',
+      confirmText: settings?.tr('picker_select') ?? 'CHỌN',
       builder: (context, child) {
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.sageGreen,
-              onPrimary: Colors.white,
-              onSurface: AppColors.darkNavy,
-            ),
-          ),
+          data: isDark
+              ? ThemeData.dark().copyWith(
+                  colorScheme: const ColorScheme.dark(
+                    primary: AppColors.sageGreen,
+                    onPrimary: Colors.white,
+                    surface: Color(0xFF1E293B),
+                    onSurface: Colors.white,
+                  ),
+                  dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF1E293B)),
+                )
+              : Theme.of(context).copyWith(
+                  colorScheme: const ColorScheme.light(
+                    primary: AppColors.sageGreen,
+                    onPrimary: Colors.white,
+                    onSurface: AppColors.darkNavy,
+                  ),
+                ),
           child: child!,
         );
       },
@@ -136,23 +158,38 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
     BuildContext context,
     EventFormController controller, {
     required bool isBatDau,
+    SettingsController? settings,
   }) async {
+    final bool isDark = settings?.isDarkMode ?? false;
     final TimeOfDay initial = isBatDau ? controller.gioBatDau : controller.gioKetThuc;
+    final String defaultHelp = isBatDau ? 'CHỌN GIỜ BẮT ĐẦU' : 'CHỌN GIỜ KẾT THÚC';
+    final String helpKey = isBatDau ? 'select_start_time_title' : 'select_end_time_title';
+
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: initial,
-      helpText: isBatDau ? 'CHỌN GIỜ BẮT ĐẦU' : 'CHỌN GIỜ KẾT THÚC',
-      cancelText: 'HỦY',
-      confirmText: 'CHỌN',
+      helpText: settings?.tr(helpKey) ?? defaultHelp,
+      cancelText: settings?.tr('picker_cancel') ?? 'HỦY',
+      confirmText: settings?.tr('picker_select') ?? 'CHỌN',
       builder: (context, child) {
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.sageGreen,
-              onPrimary: Colors.white,
-              onSurface: AppColors.darkNavy,
-            ),
-          ),
+          data: isDark
+              ? ThemeData.dark().copyWith(
+                  colorScheme: const ColorScheme.dark(
+                    primary: AppColors.sageGreen,
+                    onPrimary: Colors.white,
+                    surface: Color(0xFF1E293B),
+                    onSurface: Colors.white,
+                  ),
+                  dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF1E293B)),
+                )
+              : Theme.of(context).copyWith(
+                  colorScheme: const ColorScheme.light(
+                    primary: AppColors.sageGreen,
+                    onPrimary: Colors.white,
+                    onSurface: AppColors.darkNavy,
+                  ),
+                ),
           child: child!,
         );
       },
@@ -171,25 +208,40 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
     BuildContext context,
     EventFormController controller, {
     required bool isTuNgay,
+    SettingsController? settings,
   }) async {
+    final bool isDark = settings?.isDarkMode ?? false;
     final DateTime initial = isTuNgay ? controller.ngayBatDauLap : controller.ngayKetThucLap;
+    final String defaultHelp = isTuNgay ? 'CHỌN NGÀY BẮT ĐẦU LẶP' : 'CHỌN NGÀY KẾT THÚC LẶP';
+    final String helpKey = isTuNgay ? 'select_repeat_start_date' : 'select_repeat_end_date';
+
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: initial,
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
-      helpText: isTuNgay ? 'CHỌN NGÀY BẮT ĐẦU LẶP' : 'CHỌN NGÀY KẾT THÚC LẶP',
-      cancelText: 'HỦY',
-      confirmText: 'CHỌN',
+      helpText: settings?.tr(helpKey) ?? defaultHelp,
+      cancelText: settings?.tr('picker_cancel') ?? 'HỦY',
+      confirmText: settings?.tr('picker_select') ?? 'CHỌN',
       builder: (context, child) {
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.sageGreen,
-              onPrimary: Colors.white,
-              onSurface: AppColors.darkNavy,
-            ),
-          ),
+          data: isDark
+              ? ThemeData.dark().copyWith(
+                  colorScheme: const ColorScheme.dark(
+                    primary: AppColors.sageGreen,
+                    onPrimary: Colors.white,
+                    surface: Color(0xFF1E293B),
+                    onSurface: Colors.white,
+                  ),
+                  dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF1E293B)),
+                )
+              : Theme.of(context).copyWith(
+                  colorScheme: const ColorScheme.light(
+                    primary: AppColors.sageGreen,
+                    onPrimary: Colors.white,
+                    onSurface: AppColors.darkNavy,
+                  ),
+                ),
           child: child!,
         );
       },
@@ -207,8 +259,17 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
   // --- Submit & Conflict Checking Logic ---
 
   Future<void> _xuLyLuu(EventFormController controller) async {
+    SettingsController? settings;
+    try {
+      settings = context.read<SettingsController>();
+    } catch (_) {
+      settings = null;
+    }
+
     // 1. Validate form fields
-    final String? loiValidate = controller.validateForm();
+    final String? loiValidate = controller.validateForm(
+      tr: settings != null ? (k) => settings!.tr(k) : null,
+    );
     if (loiValidate != null) {
       _hienThiThongBaoLoi(loiValidate);
       return;
@@ -256,14 +317,28 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
             await MockEventRepository().updateCongViec(singleEvent);
           }
         } else {
-          // Áp dụng cho toàn bộ chuỗi
+          // Áp dụng cho toàn bộ chuỗi sự kiện lặp
           final CongViecModel mau = controller.taoCongViecDonLe();
-          final String maChuoi = controller.congViecGoc!.maChuoiLap!;
-          if (widget.onSaveBatch != null) {
-            final List<CongViecModel> batch = controller.sinhDanhSachCongViecLap();
-            await widget.onSaveBatch!(batch);
+          final String maChuoi = controller.congViecGoc!.maChuoiLap ??
+              controller.congViecGoc!.maQuyTacLap?.toString() ??
+              '';
+
+          final bool daThayDoiQuyTacLap = controller.daThayDoiQuyTacLap;
+          final List<CongViecModel>? danhSachMoi = daThayDoiQuyTacLap
+              ? (controller.coLapLai
+                  ? controller.sinhDanhSachCongViecLap()
+                  : [mau.copyWith(maChuoiLap: null, maQuyTacLap: null)])
+              : null;
+
+          if (widget.onUpdateSeries != null) {
+            await widget.onUpdateSeries!(maChuoi, mau, danhSachMoi);
           } else {
-            await MockEventRepository().updateChuoiCongViec(maChuoi, mau);
+            if (daThayDoiQuyTacLap && danhSachMoi != null) {
+              await MockEventRepository().deleteChuoiCongViec(maChuoi);
+              await MockEventRepository().createDanhSachCongViec(danhSachMoi);
+            } else {
+              await MockEventRepository().updateChuoiCongViec(maChuoi, mau);
+            }
           }
         }
       } else if (controller.coLapLai) {
@@ -304,13 +379,12 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
         final nav = Navigator.of(context);
         final messenger = ScaffoldMessenger.of(context);
         nav.pop(true);
+        final String thongBao = controller.isEditing
+            ? (settings?.tr('update_success') ?? 'Đã cập nhật công việc thành công!')
+            : (settings?.tr('save_success') ?? 'Đã lưu công việc thành công!');
         messenger.showSnackBar(
           SnackBar(
-            content: Text(
-              controller.isEditing
-                  ? 'Đã cập nhật công việc thành công!'
-                  : 'Đã lưu công việc thành công!',
-            ),
+            content: Text(thongBao),
             backgroundColor: AppColors.sageGreen,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -319,7 +393,9 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
       }
     } catch (e) {
       if (mounted) {
-        _hienThiThongBaoLoi('Lỗi khi lưu: $e');
+        _hienThiThongBaoLoi(
+          settings?.tr('save_error', params: {'error': e.toString()}) ?? 'Lỗi khi lưu: $e',
+        );
       }
     } finally {
       if (mounted) {
@@ -332,6 +408,13 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
 
   Future<void> _xuLyXoa(EventFormController controller) async {
     if (!controller.isEditing || controller.congViecGoc == null) return;
+
+    SettingsController? settings;
+    try {
+      settings = context.read<SettingsController>();
+    } catch (_) {
+      settings = null;
+    }
 
     final CongViecModel cv = controller.congViecGoc!;
 
@@ -362,12 +445,21 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
         context: context,
         builder: (ctx) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('Xác nhận xóa', style: TextStyle(fontWeight: FontWeight.bold)),
-          content: Text('Bạn có chắc chắn muốn xóa "${cv.tenCongViec}" không?'),
+          title: Text(
+            settings?.tr('delete_confirm_title') ?? 'Xác nhận xóa',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            settings?.tr('delete_confirm_msg', params: {'name': cv.tenCongViec}) ??
+                'Bạn có chắc chắn muốn xóa "${cv.tenCongViec}" không?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Hủy', style: TextStyle(color: AppColors.textGrey)),
+              child: Text(
+                settings?.tr('cancel_btn') ?? 'Hủy',
+                style: const TextStyle(color: AppColors.textGrey),
+              ),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(ctx).pop(true),
@@ -376,7 +468,7 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
-              child: const Text('Xóa'),
+              child: Text(settings?.tr('delete_btn') ?? 'Xóa'),
             ),
           ],
         ),
@@ -397,7 +489,7 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
       nav.pop(true);
       messenger.showSnackBar(
         SnackBar(
-          content: const Text('Đã xóa công việc thành công!'),
+          content: Text(settings?.tr('delete_success') ?? 'Đã xóa công việc thành công!'),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -427,13 +519,25 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    SettingsController? settings;
+    try {
+      settings = context.watch<SettingsController>();
+    } catch (_) {
+      settings = null;
+    }
+    final bool isDark = settings?.isDarkMode ?? false;
+    final bool isEnglish = settings?.ngonNgu == 'English';
+
     final controller = context.watch<EventFormController>();
     final mediaQuery = MediaQuery.of(context);
 
+    final Color bgColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final Color textColor = isDark ? Colors.white : AppColors.darkNavy;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.only(
         bottom: mediaQuery.viewInsets.bottom,
@@ -465,17 +569,19 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    controller.isEditing ? 'Chỉnh sửa công việc' : 'Thêm công việc mới',
-                    style: const TextStyle(
+                    controller.isEditing
+                        ? (settings?.tr('edit_task_title') ?? 'Chỉnh sửa công việc')
+                        : (settings?.tr('add_new_task') ?? 'Thêm công việc mới'),
+                    style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.darkNavy,
+                      color: textColor,
                       letterSpacing: -0.3,
                     ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded, size: 24, color: AppColors.darkNavy),
+                    icon: Icon(Icons.close_rounded, size: 24, color: textColor),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     splashRadius: 20,
@@ -485,12 +591,12 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
               const SizedBox(height: 18),
 
               // 2. Input: Tiêu đề công việc
-              const Text(
-                'Tiêu đề công việc',
+              Text(
+                settings?.tr('task_title') ?? 'Tiêu đề công việc',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.darkNavy,
+                  color: textColor,
                 ),
               ),
               const SizedBox(height: 8),
@@ -498,16 +604,16 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
                 controller: _tenController,
                 onChanged: controller.thayDoiTenCongViec,
                 textInputAction: TextInputAction.next,
-                style: const TextStyle(fontSize: 15, color: AppColors.darkNavy),
+                style: TextStyle(fontSize: 15, color: textColor),
                 decoration: InputDecoration(
-                  hintText: 'Nhập tên công việc hoặc môn học...',
+                  hintText: settings?.tr('task_title_hint') ?? 'Nhập tên công việc hoặc môn học...',
                   hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14.5),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: isDark ? const Color(0xFF0F172A) : Colors.white,
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+                    borderSide: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFD1D5DB)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -518,12 +624,12 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
               const SizedBox(height: 18),
 
               // 3. Bộ chọn Loại công việc (2 Tab to)
-              const Text(
-                'Loại công việc',
+              Text(
+                settings?.tr('task_type') ?? 'Loại công việc',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.darkNavy,
+                  color: textColor,
                 ),
               ),
               const SizedBox(height: 8),
@@ -532,9 +638,10 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
                   // Tab 1: Chủ động
                   Expanded(
                     child: _buildLoaiCongViecTab(
-                      label: 'Chủ động',
+                      label: settings?.tr('active_task') ?? 'Chủ động',
                       isSelected: controller.laViecChuDong,
                       isChuDong: true,
+                      isDark: isDark,
                       onTap: () => controller.thayDoiLoaiSuKien('CHU_DONG'),
                     ),
                   ),
@@ -542,9 +649,10 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
                   // Tab 2: Thiết yếu / Bị động
                   Expanded(
                     child: _buildLoaiCongViecTab(
-                      label: 'Thiết yếu /\nBị động',
+                      label: settings?.tr('essential_passive') ?? 'Thiết yếu /\nBị động',
                       isSelected: controller.laThietYeu,
                       isChuDong: false,
+                      isDark: isDark,
                       onTap: () => controller.thayDoiLoaiSuKien('BI_DONG'),
                     ),
                   ),
@@ -564,19 +672,21 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Ngày thực hiện',
+                          Text(
+                            settings?.tr('task_date') ?? 'Ngày thực hiện',
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.darkNavy,
+                              color: textColor,
                             ),
                           ),
                           const SizedBox(height: 8),
                           _buildDateBox(
                             context: context,
                             date: controller.ngayThucHien,
-                            onTap: () => _chonNgayThucHien(context, controller),
+                            isEnglish: isEnglish,
+                            isDark: isDark,
+                            onTap: () => _chonNgayThucHien(context, controller, settings: settings),
                           ),
                         ],
                       ),
@@ -588,18 +698,20 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Thời gian',
+                          Text(
+                            settings?.tr('task_time') ?? 'Thời gian',
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.darkNavy,
+                              color: textColor,
                             ),
                           ),
                           const SizedBox(height: 8),
                           _buildTimeSingleBox(
                             context: context,
                             controller: controller,
+                            isDark: isDark,
+                            settings: settings,
                           ),
                         ],
                       ),
@@ -609,29 +721,31 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
               ] else ...[
                 // TRƯỜNG HỢP CÔNG VIỆC LẶP LẠI (`thêm&sửa công việc lặp.png`)
                 // A. Thời gian: Bắt đầu & Kết thúc
-                const Text(
-                  'Thời gian',
+                Text(
+                  settings?.tr('task_time') ?? 'Thời gian',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.darkNavy,
+                    color: textColor,
                   ),
                 ),
                 const SizedBox(height: 8),
                 _buildTimeRecurringBox(
                   context: context,
                   controller: controller,
+                  isDark: isDark,
+                  settings: settings,
                 ),
               ],
               const SizedBox(height: 18),
 
               // 5. Ô nhập: Địa điểm / Phòng học
-              const Text(
-                'Địa điểm / Phòng học',
+              Text(
+                settings?.tr('location') ?? 'Địa điểm / Phòng học',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.darkNavy,
+                  color: textColor,
                 ),
               ),
               const SizedBox(height: 8),
@@ -639,17 +753,17 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
                 controller: _diaDiemController,
                 onChanged: controller.thayDoiDiaDiem,
                 textInputAction: TextInputAction.done,
-                style: const TextStyle(fontSize: 15, color: AppColors.darkNavy),
+                style: TextStyle(fontSize: 15, color: textColor),
                 decoration: InputDecoration(
-                  hintText: 'Nhập địa điểm, phòng học (Ví dụ: A3... )',
+                  hintText: settings?.tr('location_hint') ?? 'Nhập địa điểm, phòng học (Ví dụ: A3... )',
                   hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14.5),
                   prefixIcon: const Icon(Icons.location_on, color: Color(0xFF64748B), size: 20),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: isDark ? const Color(0xFF0F172A) : Colors.white,
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+                    borderSide: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFD1D5DB)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -663,12 +777,12 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Lặp lại hàng tuần',
+                  Text(
+                    settings?.tr('weekly_repeat') ?? 'Lặp lại hàng tuần',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.darkNavy,
+                      color: textColor,
                     ),
                   ),
                   Transform.scale(
@@ -693,7 +807,7 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
                   children: [
                     const SizedBox(height: 12),
                     // Thanh chọn các thứ [ T2 | T3 | T4 | T5 | T6 | T7 | CN ]
-                    _buildDayOfWeekSelector(controller),
+                    _buildDayOfWeekSelector(controller, isEnglish: isEnglish, isDark: isDark),
                     const SizedBox(height: 18),
 
                     // Hai ô ngày: "Thời gian lặp lại" & "Đến ngày"
@@ -703,19 +817,20 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Thời gian lặp lại',
+                              Text(
+                                settings?.tr('repeat_time_range') ?? 'Thời gian lặp lại',
                                 style: TextStyle(
                                   fontSize: 14.5,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.darkNavy,
+                                  color: textColor,
                                 ),
                               ),
                               const SizedBox(height: 6),
                               _buildSimpleDateBox(
                                 context: context,
                                 date: controller.ngayBatDauLap,
-                                onTap: () => _chonKhoangNgayLap(context, controller, isTuNgay: true),
+                                isDark: isDark,
+                                onTap: () => _chonKhoangNgayLap(context, controller, isTuNgay: true, settings: settings),
                               ),
                             ],
                           ),
@@ -725,19 +840,20 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Đến ngày',
+                              Text(
+                                settings?.tr('until_date') ?? 'Đến ngày',
                                 style: TextStyle(
                                   fontSize: 14.5,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.darkNavy,
+                                  color: textColor,
                                 ),
                               ),
                               const SizedBox(height: 6),
                               _buildSimpleDateBox(
                                 context: context,
                                 date: controller.ngayKetThucLap,
-                                onTap: () => _chonKhoangNgayLap(context, controller, isTuNgay: false),
+                                isDark: isDark,
+                                onTap: () => _chonKhoangNgayLap(context, controller, isTuNgay: false, settings: settings),
                               ),
                             ],
                           ),
@@ -760,9 +876,9 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
                   // Nút Hủy bỏ
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text(
-                      'Hủy bỏ',
-                      style: TextStyle(
+                    child: Text(
+                      settings?.tr('cancel_btn') ?? 'Hủy bỏ',
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textGrey,
@@ -775,7 +891,7 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
                     IconButton(
                       onPressed: () => _xuLyXoa(controller),
                       icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
-                      tooltip: 'Xóa công việc',
+                      tooltip: settings?.tr('delete_btn') ?? 'Xóa công việc',
                     ),
                   ],
 
@@ -804,9 +920,9 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
                               strokeWidth: 2.2,
                             ),
                           )
-                        : const Text(
-                            'Lưu công việc',
-                            style: TextStyle(
+                        : Text(
+                            settings?.tr('save_btn') ?? 'Lưu công việc',
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -829,19 +945,26 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
     required String label,
     required bool isSelected,
     required bool isChuDong,
+    bool isDark = false,
     required VoidCallback onTap,
   }) {
     final Color bgColor = isChuDong
-        ? (isSelected ? const Color(0xFFD2E3FC) : const Color(0xFFF1F5F9))
-        : (isSelected ? const Color(0xFFFFE2CC) : const Color(0xFFF1F5F9));
+        ? (isSelected
+            ? (isDark ? const Color(0xFF1E3A8A).withValues(alpha: 0.45) : const Color(0xFFD2E3FC))
+            : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9)))
+        : (isSelected
+            ? (isDark ? const Color(0xFF9A3412).withValues(alpha: 0.45) : const Color(0xFFFFE2CC))
+            : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9)));
 
     final Color borderColor = isChuDong
-        ? (isSelected ? const Color(0xFF93C5FD) : const Color(0xFFE2E8F0))
-        : (isSelected ? const Color(0xFFFDBA74) : const Color(0xFFE2E8F0));
+        ? (isSelected ? const Color(0xFF93C5FD) : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)))
+        : (isSelected ? const Color(0xFFFDBA74) : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)));
 
     final Color textColor = isChuDong
-        ? const Color(0xFF1E3A8A)
-        : const Color(0xFF9A3412);
+        ? (isDark ? const Color(0xFF93C5FD) : const Color(0xFF1E3A8A))
+        : (isDark ? const Color(0xFFFDBA74) : const Color(0xFF9A3412));
+
+    final Color unselectedTextColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     return InkWell(
       onTap: onTap,
@@ -877,7 +1000,7 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
                 style: TextStyle(
                   fontSize: 14.5,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                  color: isSelected ? textColor : const Color(0xFF64748B),
+                  color: isSelected ? textColor : unselectedTextColor,
                   height: 1.2,
                 ),
               ),
@@ -892,10 +1015,16 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
   Widget _buildDateBox({
     required BuildContext context,
     required DateTime date,
+    bool isEnglish = false,
+    bool isDark = false,
     required VoidCallback onTap,
   }) {
-    final String thuStr = _dinhDangThu(date.weekday);
+    final String thuStr = _dinhDangThu(date.weekday, isEnglish: isEnglish);
     final String ngayStr = DateFormat('dd/MM/yyyy').format(date);
+    final Color numberColor = isDark ? Colors.white : AppColors.darkNavy;
+    final Color boxBg = isDark ? const Color(0xFF0F172A) : Colors.white;
+    final Color boxBorder = isDark ? const Color(0xFF334155) : const Color(0xFFD1D5DB);
+    final Color iconColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     return InkWell(
       onTap: onTap,
@@ -904,8 +1033,9 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
         height: 60,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
+          color: boxBg,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFD1D5DB)),
+          border: Border.all(color: boxBorder),
         ),
         child: Row(
           children: [
@@ -916,24 +1046,24 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
                 children: [
                   Text(
                     '$thuStr,',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.darkNavy,
+                      color: numberColor,
                     ),
                   ),
                   Text(
                     ngayStr,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.darkNavy,
+                      color: numberColor,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.calendar_today_outlined, size: 20, color: Color(0xFF64748B)),
+            Icon(Icons.calendar_today_outlined, size: 20, color: iconColor),
           ],
         ),
       ),
@@ -944,24 +1074,32 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
   Widget _buildTimeSingleBox({
     required BuildContext context,
     required EventFormController controller,
+    bool isDark = false,
+    SettingsController? settings,
   }) {
     final String startStr =
         '${controller.gioBatDau.hour.toString().padLeft(2, '0')}:${controller.gioBatDau.minute.toString().padLeft(2, '0')}';
     final String endStr =
         '${controller.gioKetThuc.hour.toString().padLeft(2, '0')}:${controller.gioKetThuc.minute.toString().padLeft(2, '0')}';
+    final Color numberColor = isDark ? Colors.white : AppColors.darkNavy;
+    final Color boxBg = isDark ? const Color(0xFF0F172A) : Colors.white;
+    final Color boxBorder = isDark ? const Color(0xFF334155) : const Color(0xFFD1D5DB);
+    final Color dividerColor = isDark ? const Color(0xFF334155) : const Color(0xFFE5E7EB);
+    final Color iconColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     return Container(
       height: 60,
       decoration: BoxDecoration(
+        color: boxBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFD1D5DB)),
+        border: Border.all(color: boxBorder),
       ),
       child: Row(
         children: [
           // Giờ bắt đầu
           Expanded(
             child: InkWell(
-              onTap: () => _chonGio(context, controller, isBatDau: true),
+              onTap: () => _chonGio(context, controller, isBatDau: true, settings: settings),
               borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -970,25 +1108,25 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
                   children: [
                     Text(
                       startStr,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.darkNavy,
+                        color: numberColor,
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(Icons.access_time_rounded, size: 17, color: Color(0xFF64748B)),
+                    Icon(Icons.access_time_rounded, size: 17, color: iconColor),
                   ],
                 ),
               ),
             ),
           ),
           // Đường chia dọc
-          Container(width: 1, height: 36, color: const Color(0xFFE5E7EB)),
+          Container(width: 1, height: 36, color: dividerColor),
           // Giờ kết thúc
           Expanded(
             child: InkWell(
-              onTap: () => _chonGio(context, controller, isBatDau: false),
+              onTap: () => _chonGio(context, controller, isBatDau: false, settings: settings),
               borderRadius: const BorderRadius.horizontal(right: Radius.circular(12)),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -997,14 +1135,14 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
                   children: [
                     Text(
                       endStr,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.darkNavy,
+                        color: numberColor,
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(Icons.access_time_rounded, size: 17, color: Color(0xFF64748B)),
+                    Icon(Icons.access_time_rounded, size: 17, color: iconColor),
                   ],
                 ),
               ),
@@ -1019,31 +1157,39 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
   Widget _buildTimeRecurringBox({
     required BuildContext context,
     required EventFormController controller,
+    bool isDark = false,
+    SettingsController? settings,
   }) {
     final String startStr =
         '${controller.gioBatDau.hour.toString().padLeft(2, '0')}:${controller.gioBatDau.minute.toString().padLeft(2, '0')}';
     final String endStr =
         '${controller.gioKetThuc.hour.toString().padLeft(2, '0')}:${controller.gioKetThuc.minute.toString().padLeft(2, '0')}';
+    final Color numberColor = isDark ? Colors.white : AppColors.darkNavy;
+    final Color boxBg = isDark ? const Color(0xFF0F172A) : Colors.white;
+    final Color boxBorder = isDark ? const Color(0xFF334155) : const Color(0xFFD1D5DB);
+    final Color labelColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
+    final Color iconColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     return Row(
       children: [
         // Bắt đầu
         Expanded(
           child: InkWell(
-            onTap: () => _chonGio(context, controller, isBatDau: true),
+            onTap: () => _chonGio(context, controller, isBatDau: true, settings: settings),
             borderRadius: BorderRadius.circular(12),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
+                color: boxBg,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFD1D5DB)),
+                border: Border.all(color: boxBorder),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Bắt đầu',
-                    style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                  Text(
+                    settings?.tr('start_time') ?? 'Bắt đầu',
+                    style: TextStyle(fontSize: 13, color: labelColor),
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -1051,13 +1197,13 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
                     children: [
                       Text(
                         startStr,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.darkNavy,
+                          color: numberColor,
                         ),
                       ),
-                      const Icon(Icons.access_time_rounded, size: 18, color: Color(0xFF64748B)),
+                      Icon(Icons.access_time_rounded, size: 18, color: iconColor),
                     ],
                   ),
                 ],
@@ -1069,20 +1215,21 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
         // Kết thúc
         Expanded(
           child: InkWell(
-            onTap: () => _chonGio(context, controller, isBatDau: false),
+            onTap: () => _chonGio(context, controller, isBatDau: false, settings: settings),
             borderRadius: BorderRadius.circular(12),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
+                color: boxBg,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFD1D5DB)),
+                border: Border.all(color: boxBorder),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Kết thúc',
-                    style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                  Text(
+                    settings?.tr('end_time') ?? 'Kết thúc',
+                    style: TextStyle(fontSize: 13, color: labelColor),
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -1090,13 +1237,13 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
                     children: [
                       Text(
                         endStr,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.darkNavy,
+                          color: numberColor,
                         ),
                       ),
-                      const Icon(Icons.access_time_rounded, size: 18, color: Color(0xFF64748B)),
+                      Icon(Icons.access_time_rounded, size: 18, color: iconColor),
                     ],
                   ),
                 ],
@@ -1109,15 +1256,15 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
   }
 
   /// Thanh chọn các thứ [ T2 | T3 | T4 | T5 | T6 | T7 | CN ]
-  Widget _buildDayOfWeekSelector(EventFormController controller) {
-    const List<Map<String, dynamic>> cacThu = [
-      {'ma': 2, 'ten': 'T2'},
-      {'ma': 3, 'ten': 'T3'},
-      {'ma': 4, 'ten': 'T4'},
-      {'ma': 5, 'ten': 'T5'},
-      {'ma': 6, 'ten': 'T6'},
-      {'ma': 7, 'ten': 'T7'},
-      {'ma': 8, 'ten': 'CN'},
+  Widget _buildDayOfWeekSelector(EventFormController controller, {bool isEnglish = false, bool isDark = false}) {
+    final List<Map<String, dynamic>> cacThu = [
+      {'ma': 2, 'ten': isEnglish ? 'Mon' : 'T2'},
+      {'ma': 3, 'ten': isEnglish ? 'Tue' : 'T3'},
+      {'ma': 4, 'ten': isEnglish ? 'Wed' : 'T4'},
+      {'ma': 5, 'ten': isEnglish ? 'Thu' : 'T5'},
+      {'ma': 6, 'ten': isEnglish ? 'Fri' : 'T6'},
+      {'ma': 7, 'ten': isEnglish ? 'Sat' : 'T7'},
+      {'ma': 8, 'ten': isEnglish ? 'Sun' : 'CN'},
     ];
 
     return Row(
@@ -1136,9 +1283,13 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
             height: 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isSelected ? AppColors.sageGreen : Colors.white,
+              color: isSelected
+                  ? AppColors.sageGreen
+                  : (isDark ? const Color(0xFF0F172A) : Colors.white),
               border: Border.all(
-                color: isSelected ? AppColors.sageGreen : const Color(0xFFD1D5DB),
+                color: isSelected
+                    ? AppColors.sageGreen
+                    : (isDark ? const Color(0xFF334155) : const Color(0xFFD1D5DB)),
                 width: 1.2,
               ),
             ),
@@ -1148,7 +1299,9 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected ? Colors.white : const Color(0xFF6B7280),
+                  color: isSelected
+                      ? Colors.white
+                      : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280)),
                 ),
               ),
             ),
@@ -1162,9 +1315,15 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
   Widget _buildSimpleDateBox({
     required BuildContext context,
     required DateTime date,
+    bool isDark = false,
     required VoidCallback onTap,
   }) {
     final String str = DateFormat('dd/MM/yyyy').format(date);
+    final Color numberColor = isDark ? Colors.white : AppColors.darkNavy;
+    final Color boxBg = isDark ? const Color(0xFF0F172A) : Colors.white;
+    final Color boxBorder = isDark ? const Color(0xFF334155) : const Color(0xFFD1D5DB);
+    final Color iconColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -1172,45 +1331,50 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
         height: 50,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
+          color: boxBg,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFD1D5DB)),
+          border: Border.all(color: boxBorder),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               str,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14.5,
                 fontWeight: FontWeight.w600,
-                color: AppColors.darkNavy,
+                color: numberColor,
               ),
             ),
-            const Icon(Icons.calendar_today_outlined, size: 18, color: Color(0xFF64748B)),
+            Icon(Icons.calendar_today_outlined, size: 18, color: iconColor),
           ],
         ),
       ),
     );
   }
 
-  String _dinhDangThu(int weekday) {
+  String _dinhDangThu(int weekday, {bool isEnglish = false}) {
+    if (isEnglish) {
+      switch (weekday) {
+        case DateTime.monday: return 'Monday';
+        case DateTime.tuesday: return 'Tuesday';
+        case DateTime.wednesday: return 'Wednesday';
+        case DateTime.thursday: return 'Thursday';
+        case DateTime.friday: return 'Friday';
+        case DateTime.saturday: return 'Saturday';
+        case DateTime.sunday: return 'Sunday';
+        default: return '';
+      }
+    }
     switch (weekday) {
-      case DateTime.monday:
-        return 'Thứ Hai';
-      case DateTime.tuesday:
-        return 'Thứ Ba';
-      case DateTime.wednesday:
-        return 'Thứ Tư';
-      case DateTime.thursday:
-        return 'Thứ Năm';
-      case DateTime.friday:
-        return 'Thứ Sáu';
-      case DateTime.saturday:
-        return 'Thứ Bảy';
-      case DateTime.sunday:
-        return 'Chủ Nhật';
-      default:
-        return '';
+      case DateTime.monday: return 'Thứ Hai';
+      case DateTime.tuesday: return 'Thứ Ba';
+      case DateTime.wednesday: return 'Thứ Tư';
+      case DateTime.thursday: return 'Thứ Năm';
+      case DateTime.friday: return 'Thứ Sáu';
+      case DateTime.saturday: return 'Thứ Bảy';
+      case DateTime.sunday: return 'Chủ Nhật';
+      default: return '';
     }
   }
 }

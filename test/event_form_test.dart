@@ -331,7 +331,7 @@ void main() {
 
     testWidgets('Kiem tra WeeklyGridWidget danh dau ngay hom nay (T3 13) bang pill badge', (WidgetTester tester) async {
       final repository = MockEventRepository();
-      final controller = ScheduleController(eventRepository: repository);
+      final controller = ScheduleController(eventRepository: repository, ngayKhoiTao: DateTime(2026, 10, 13));
 
       await tester.pumpWidget(
         MaterialApp(
@@ -362,6 +362,92 @@ void main() {
       expect(controller.tuanDangXemChuaHomNay, isTrue);
 
       controller.dispose();
+    });
+  });
+
+  group('5. Recurring Series Editing Tests (Cap nhat chuoi su kien)', () {
+    test('MockEventRepository.updateChuoiCongViec cap nhat tat ca cac su kien cung chuoi lap', () async {
+      final repo = MockEventRepository();
+      final List<CongViecModel> events = repo.tatCaCongViecHienCo;
+      final chuoiWebEvents = events.where((e) => e.maChuoiLap == 'chuoi_hoc_web').toList();
+      expect(chuoiWebEvents.length, greaterThanOrEqualTo(2));
+
+      final mauMoi = CongViecModel(
+        id: 1,
+        maNguoiDung: 1,
+        maChuoiLap: 'chuoi_hoc_web',
+        tenCongViec: 'Hoc Lap Trinh Web Nang Cao',
+        diaDiem: 'Phong Lab 502',
+        thoiGianBatDau: DateTime(2026, 10, 12, 9, 30),
+        thoiGianKetThuc: DateTime(2026, 10, 12, 11, 30),
+        ngayTao: DateTime.now(),
+        ghiChu: 'Mang theo laptop',
+      );
+
+      final capNhat = await repo.updateChuoiCongViec('chuoi_hoc_web', mauMoi);
+      expect(capNhat.length, equals(chuoiWebEvents.length));
+
+      for (final cv in capNhat) {
+        expect(cv.tenCongViec, equals('Hoc Lap Trinh Web Nang Cao'));
+        expect(cv.diaDiem, equals('Phong Lab 502'));
+        expect(cv.ghiChu, equals('Mang theo laptop'));
+        expect(cv.thoiGianBatDau.hour, equals(9));
+        expect(cv.thoiGianBatDau.minute, equals(30));
+        expect(cv.thoiGianKetThuc.hour, equals(11));
+        expect(cv.thoiGianKetThuc.minute, equals(30));
+      }
+    });
+
+    test('ScheduleController.capNhatChuoiCongViec cap nhat danh sach cong viec trong tuan', () async {
+      final repo = MockEventRepository();
+      final controller = ScheduleController(
+        eventRepository: repo,
+        ngayKhoiTao: DateTime(2026, 10, 12),
+      );
+      await controller.loadDanhSachCongViec();
+
+      final mauMoi = CongViecModel(
+        id: 1,
+        maNguoiDung: 1,
+        maChuoiLap: 'chuoi_hoc_web',
+        tenCongViec: 'Hoc React & Flutter Web',
+        diaDiem: 'Phong B201',
+        thoiGianBatDau: DateTime(2026, 10, 12, 8, 30),
+        thoiGianKetThuc: DateTime(2026, 10, 12, 10, 30),
+        ngayTao: DateTime.now(),
+      );
+
+      await controller.capNhatChuoiCongViec(
+        maChuoiLap: 'chuoi_hoc_web',
+        mau: mauMoi,
+      );
+
+      final suKienSauCapNhat = controller.danhSachCongViec
+          .where((e) => e.maChuoiLap == 'chuoi_hoc_web')
+          .toList();
+      expect(suKienSauCapNhat.isNotEmpty, isTrue);
+      for (final e in suKienSauCapNhat) {
+        expect(e.tenCongViec, equals('Hoc React & Flutter Web'));
+        expect(e.diaDiem, equals('Phong B201'));
+      }
+    });
+
+    test('EventFormController khoi tao day du cac thu trong chuoi tu danhSachHienCo', () {
+      final repo = MockEventRepository();
+      final allEvents = repo.tatCaCongViecHienCo;
+      final event1 = allEvents.firstWhere((e) => e.maChuoiLap == 'chuoi_hoc_web');
+
+      final formCtrl = EventFormController(
+        congViecGoc: event1,
+        danhSachHienCo: allEvents,
+      );
+
+      expect(formCtrl.coLapLai, isTrue);
+      // Chuoi hoc web lap vao Thu 2, Thu 4, Thu 6 (int: 2, 4, 6)
+      expect(formCtrl.cacThuDaChon.contains(2), isTrue);
+      expect(formCtrl.cacThuDaChon.contains(4), isTrue);
+      expect(formCtrl.cacThuDaChon.contains(6), isTrue);
+      expect(formCtrl.daThayDoiQuyTacLap, isFalse);
     });
   });
 }

@@ -3,11 +3,14 @@ import '../../../core/constants/app_colors.dart';
 import 'timass_logo_widget.dart';
 
 /// App Header: Logo Timass, nút "+ Thêm việc", icon Chuông có chấm đỏ, Avatar người dùng
+/// Hỗ trợ Dark Mode và Đa ngôn ngữ
 class AppHeaderWidget extends StatelessWidget {
   final VoidCallback? onThemCongViec;
   final VoidCallback? onThongBao;
   final VoidCallback? onAvatar;
   final bool coThongBaoMoi;
+  final bool isDark;
+  final String? textThemViec;
 
   const AppHeaderWidget({
     super.key,
@@ -15,6 +18,8 @@ class AppHeaderWidget extends StatelessWidget {
     this.onThongBao,
     this.onAvatar,
     this.coThongBaoMoi = true,
+    this.isDark = false,
+    this.textThemViec,
   });
 
   @override
@@ -50,18 +55,18 @@ class AppHeaderWidget extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.add,
                       color: Colors.white,
                       size: 16,
                     ),
-                    SizedBox(width: 4),
+                    const SizedBox(width: 4),
                     Text(
-                      'Thêm việc',
-                      style: TextStyle(
+                      textThemViec ?? 'Thêm việc',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -84,12 +89,13 @@ class AppHeaderWidget extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.8),
+                    color: isDark ? const Color(0xFF1E293B) : Colors.white.withValues(alpha: 0.8),
                     shape: BoxShape.circle,
+                    border: isDark ? Border.all(color: const Color(0xFF334155)) : null,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.notifications_outlined,
-                    color: AppColors.darkNavy,
+                    color: isDark ? Colors.white : AppColors.darkNavy,
                     size: 24,
                   ),
                 ),
@@ -103,7 +109,10 @@ class AppHeaderWidget extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: const Color(0xFFEF4444),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                   ),
@@ -121,7 +130,10 @@ class AppHeaderWidget extends StatelessWidget {
               height: 36,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF334155) : Colors.white,
+                  width: 2,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.08),

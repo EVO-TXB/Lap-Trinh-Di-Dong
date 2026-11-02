@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../cai_dat/controllers/settings_controller.dart';
 import '../../cong_viec/models/cong_viec_model.dart';
 
 /// Bong bóng thông báo nổi kéo thả phong cách Messenger (Chat Head Bubble)
@@ -278,6 +280,12 @@ class _ChatHeadBubbleWidgetState extends State<ChatHeadBubbleWidget>
 
   /// Cửa sổ Popup bung ra từ bong bóng (Messenger Chat Flyout)
   Widget _buildMiniFlyoutPopup(Size screenSize, CongViecModel congViec, bool isLeft) {
+    SettingsController? settings;
+    try {
+      settings = context.watch<SettingsController>();
+    } catch (_) {
+      settings = null;
+    }
     final double cardWidth = 300;
     double left = isLeft ? _viTri.dx + 65 : _viTri.dx - cardWidth - 8;
     double top = _viTri.dy - 10;
@@ -320,10 +328,10 @@ class _ChatHeadBubbleWidgetState extends State<ChatHeadBubbleWidget>
                 children: [
                   const Icon(Icons.notifications_active_rounded, color: AppColors.sageGreen, size: 20),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Nhắc nhở Timass',
-                      style: TextStyle(
+                      settings?.tr('reminder_upcoming') ?? 'Nhắc nhở Timass',
+                      style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: AppColors.darkNavy,
@@ -392,7 +400,7 @@ class _ChatHeadBubbleWidgetState extends State<ChatHeadBubbleWidget>
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         padding: const EdgeInsets.symmetric(vertical: 8),
                       ),
-                      child: const Text('Hoãn 5p', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                      child: Text(settings?.tr('snooze_5m') ?? 'Hoãn 5p', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                     ),
                   ),
 
@@ -412,7 +420,7 @@ class _ChatHeadBubbleWidgetState extends State<ChatHeadBubbleWidget>
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         padding: const EdgeInsets.symmetric(vertical: 8),
                       ),
-                      child: const Text('Xem ngay', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      child: Text(settings?.tr('view_now_btn') ?? 'Xem ngay', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],

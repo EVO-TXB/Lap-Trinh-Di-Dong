@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../controllers/settings_controller.dart';
 
 /// Hộp thoại Đổi mật khẩu
 class DoiMatKhauDialog extends StatefulWidget {
@@ -48,20 +50,31 @@ class _DoiMatKhauDialogState extends State<DoiMatKhauDialog> {
 
   @override
   Widget build(BuildContext context) {
+    SettingsController? settings;
+    try {
+      settings = context.watch<SettingsController>();
+    } catch (_) {
+      settings = null;
+    }
+    final bool isDark = settings?.isDarkMode ?? false;
+    final Color dialogBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final Color titleColor = isDark ? Colors.white : AppColors.darkNavy;
+
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: dialogBg,
       titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
       contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
-      title: const Row(
+      title: Row(
         children: [
-          Icon(Icons.lock_reset_rounded, color: AppColors.sageGreen, size: 26),
-          SizedBox(width: 10),
+          const Icon(Icons.lock_reset_rounded, color: AppColors.sageGreen, size: 26),
+          const SizedBox(width: 10),
           Text(
-            'Đổi mật khẩu',
+            settings?.tr('change_password') ?? 'Đổi mật khẩu',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: AppColors.darkNavy,
+              color: titleColor,
             ),
           ),
         ],
@@ -77,8 +90,8 @@ class _DoiMatKhauDialogState extends State<DoiMatKhauDialog> {
                 controller: _matKhauCuController,
                 obscureText: _anMatKhauCu,
                 decoration: InputDecoration(
-                  labelText: 'Mật khẩu hiện tại',
-                  hintText: 'Nhập mật khẩu đang dùng',
+                  labelText: settings?.tr('current_password') ?? 'Mật khẩu hiện tại',
+                  hintText: settings?.tr('enter_current_password') ?? 'Nhập mật khẩu đang dùng',
                   prefixIcon: const Icon(Icons.lock_outline, size: 20),
                   suffixIcon: IconButton(
                     icon: Icon(_anMatKhauCu ? Icons.visibility_off : Icons.visibility, size: 20),
@@ -92,7 +105,9 @@ class _DoiMatKhauDialogState extends State<DoiMatKhauDialog> {
                   ),
                 ),
                 validator: (val) {
-                  if (val == null || val.isEmpty) return 'Vui lòng nhập mật khẩu cũ';
+                  if (val == null || val.isEmpty) {
+                    return settings?.tr('err_enter_old_password') ?? 'Vui lòng nhập mật khẩu cũ';
+                  }
                   return null;
                 },
               ),
@@ -103,8 +118,8 @@ class _DoiMatKhauDialogState extends State<DoiMatKhauDialog> {
                 controller: _matKhauMoiController,
                 obscureText: _anMatKhauMoi,
                 decoration: InputDecoration(
-                  labelText: 'Mật khẩu mới',
-                  hintText: 'Tối thiểu 6 ký tự',
+                  labelText: settings?.tr('new_password') ?? 'Mật khẩu mới',
+                  hintText: settings?.tr('min_6_chars') ?? 'Tối thiểu 6 ký tự',
                   prefixIcon: const Icon(Icons.key_rounded, size: 20),
                   suffixIcon: IconButton(
                     icon: Icon(_anMatKhauMoi ? Icons.visibility_off : Icons.visibility, size: 20),
@@ -118,7 +133,9 @@ class _DoiMatKhauDialogState extends State<DoiMatKhauDialog> {
                   ),
                 ),
                 validator: (val) {
-                  if (val == null || val.length < 6) return 'Mật khẩu phải có ít nhất 6 ký tự';
+                  if (val == null || val.length < 6) {
+                    return settings?.tr('err_password_min_6') ?? 'Mật khẩu phải có ít nhất 6 ký tự';
+                  }
                   return null;
                 },
               ),
@@ -129,8 +146,8 @@ class _DoiMatKhauDialogState extends State<DoiMatKhauDialog> {
                 controller: _xacNhanController,
                 obscureText: _anXacNhan,
                 decoration: InputDecoration(
-                  labelText: 'Xác nhận mật khẩu mới',
-                  hintText: 'Nhập lại mật khẩu mới',
+                  labelText: settings?.tr('confirm_new_password') ?? 'Xác nhận mật khẩu mới',
+                  hintText: settings?.tr('reenter_new_password') ?? 'Nhập lại mật khẩu mới',
                   prefixIcon: const Icon(Icons.check_circle_outline, size: 20),
                   suffixIcon: IconButton(
                     icon: Icon(_anXacNhan ? Icons.visibility_off : Icons.visibility, size: 20),
@@ -144,7 +161,9 @@ class _DoiMatKhauDialogState extends State<DoiMatKhauDialog> {
                   ),
                 ),
                 validator: (val) {
-                  if (val != _matKhauMoiController.text) return 'Mật khẩu xác nhận không khớp';
+                  if (val != _matKhauMoiController.text) {
+                    return settings?.tr('err_password_not_match') ?? 'Mật khẩu xác nhận không khớp';
+                  }
                   return null;
                 },
               ),
@@ -156,7 +175,7 @@ class _DoiMatKhauDialogState extends State<DoiMatKhauDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
+          child: Text(settings?.tr('cancel_btn') ?? 'Hủy', style: const TextStyle(color: Colors.grey)),
         ),
         ElevatedButton(
           onPressed: _dangLuu ? null : _xuLyDoiMatKhau,
@@ -172,7 +191,10 @@ class _DoiMatKhauDialogState extends State<DoiMatKhauDialog> {
                   height: 18,
                   child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                 )
-              : const Text('Cập nhật mật khẩu', style: TextStyle(fontWeight: FontWeight.w600)),
+              : Text(
+                  settings?.tr('update_password_btn') ?? 'Cập nhật mật khẩu',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
         ),
       ],
     );

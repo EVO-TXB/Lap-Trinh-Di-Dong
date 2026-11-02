@@ -29,23 +29,21 @@ class ScheduleController extends ChangeNotifier {
   // Thời gian thực để hiển thị Vạch đỏ Realtime & Điều phối quét thông báo
   late DateTime _thoiGianThuc;
   Timer? _realtimeTimer;
+  final DateTime? _ngayKhoiTaoTuyChon;
+  bool _batDauChuNhat = false;
 
-  ScheduleController({required IEventRepository eventRepository})
-      : _eventRepository = eventRepository {
-    // Mặc định chọn Thứ 3, ngày 13/10/2026 (Tuần 42) để khớp chính xác UI mẫu
-    _ngayHienTai = DateTime(2026, 10, 13);
+  ScheduleController({
+    required IEventRepository eventRepository,
+    DateTime? ngayKhoiTao,
+  })  : _eventRepository = eventRepository,
+        _ngayKhoiTaoTuyChon = ngayKhoiTao {
+    // Truy cập thời gian thực trên thiết bị DateTime.now()
+    final DateTime now = ngayKhoiTao ?? DateTime.now();
+    _ngayHienTai = DateTime(now.year, now.month, now.day);
     _ngayDauTuan = _tinhNgayDauTuan(_ngayHienTai);
-    
-    // Khởi tạo thời gian thực (giả lập 18:00 nếu ngày khác, hoặc cập nhật thời gian thực tế)
-    _thoiGianThuc = DateTime(
-      _ngayHienTai.year,
-      _ngayHienTai.month,
-      _ngayHienTai.day,
-      18,
-      0,
-    );
+    _thoiGianThuc = now;
 
-    // Kích hoạt Timer cập nhật Realtime mỗi 30s & quét thông báo ngầm
+    // Kích hoạt Timer cập nhật Realtime mỗi 10s & quét thông báo ngầm
     _startRealtimeTimer();
 
     // Nạp dữ liệu ban đầu
@@ -59,28 +57,45 @@ class ScheduleController extends ChangeNotifier {
   bool get isLoading => _isLoading;
   int get cheDoXem => _cheDoXem;
   DateTime get thoiGianThuc => _thoiGianThuc;
+  bool get batDauChuNhat => _batDauChuNhat;
 
-  /// Ngày hôm nay thực tế của hệ thống (mốc cố định: Thứ 3, 13/10/2026)
-  static final DateTime _ngayHomNayHeThong = DateTime(2026, 10, 13);
-  DateTime get ngayHomNayThucTe => _ngayHomNayHeThong;
+  /// Cập nhật ngày bắt đầu tuần (Thứ Hai / Chủ Nhật) từ Cài đặt
+  void capNhatNgayBatDauTuan(bool laChuNhat) {
+    if (_batDauChuNhat != laChuNhat) {
+      _batDauChuNhat = laChuNhat;
+      _ngayDauTuan = _tinhNgayDauTuan(_ngayHienTai);
+      loadDanhSachCongViec();
+    }
+  }
 
-  /// Kiểm tra một ngày cụ thể có phải là ngày hôm nay thực tế hay không
+  /// Ngày hôm nay thực tế trên thiết bị
+  DateTime get ngayHomNayThucTe {
+    final now = _ngayKhoiTaoTuyChon ?? DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  /// Kiểm tra một ngày cụ thể có phải là ngày hôm nay trên thiết bị hay không
   bool laNgayHomNay(DateTime date) {
-    return date.year == _ngayHomNayHeThong.year &&
-           date.month == _ngayHomNayHeThong.month &&
-           date.day == _ngayHomNayHeThong.day;
+    final today = ngayHomNayThucTe;
+    return date.year == today.year &&
+           date.month == today.month &&
+           date.day == today.day;
   }
 
   /// Kiểm tra tuần đang xem có chứa ngày hôm nay thực tế hay không
   bool get tuanDangXemChuaHomNay {
-    final DateTime dauTuanHomNay = _tinhNgayDauTuan(_ngayHomNayHeThong);
+    final DateTime dauTuanHomNay = _tinhNgayDauTuan(ngayHomNayThucTe);
     return dauTuanHomNay.year == _ngayDauTuan.year &&
            dauTuanHomNay.month == _ngayDauTuan.month &&
            dauTuanHomNay.day == _ngayDauTuan.day;
   }
 
-  /// Tính ngày Thứ Hai đầu tuần của một ngày bất kỳ
+  /// Tính ngày đầu tuần (Thứ Hai hoặc Chủ Nhật)
   DateTime _tinhNgayDauTuan(DateTime date) {
+    if (_batDauChuNhat) {
+      final int diff = date.weekday % 7; // Sunday=0, Monday=1, ...
+      return DateTime(date.year, date.month, date.day).subtract(Duration(days: diff));
+    }
     final int weekday = date.weekday; // 1 = Monday, 7 = Sunday
     return DateTime(date.year, date.month, date.day).subtract(Duration(days: weekday - 1));
   }
@@ -88,9 +103,12 @@ class ScheduleController extends ChangeNotifier {
   /// Khởi động đồng hồ thời gian thực & tác vụ quét thông báo / tự động hóa
   void _startRealtimeTimer() {
     _realtimeTimer?.cancel();
-    _realtimeTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      // Tự động tịnh tiến thời gian thực
-      _thoiGianThuc = _thoiGianThuc.add(const Duration(seconds: 30));
+    _realtimeTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (_ngayKhoiTaoTuyChon == null) {
+        _thoiGianThuc = DateTime.now();
+      } else {
+        _thoiGianThuc = _thoiGianThuc.add(const Duration(seconds: 10));
+      }
       quetThongBaoVaTuDongHoa();
       notifyListeners();
     });
@@ -167,17 +185,12 @@ class ScheduleController extends ChangeNotifier {
     loadDanhSachCongViec();
   }
 
-  /// Nút "Hôm nay": Trở về ngày hôm nay
+  /// Nút "Hôm nay": Trở về ngày hôm nay thực tế trên thiết bị
   void chuyenDenHomNay() {
-    _ngayHienTai = DateTime(2026, 10, 13);
+    final now = _ngayKhoiTaoTuyChon ?? DateTime.now();
+    _ngayHienTai = DateTime(now.year, now.month, now.day);
     _ngayDauTuan = _tinhNgayDauTuan(_ngayHienTai);
-    _thoiGianThuc = DateTime(
-      _ngayHienTai.year,
-      _ngayHienTai.month,
-      _ngayHienTai.day,
-      18,
-      0,
-    );
+    _thoiGianThuc = now;
     loadDanhSachCongViec();
   }
 
@@ -259,13 +272,15 @@ class ScheduleController extends ChangeNotifier {
 
   int get phanTramHoanThanh => (tiLeHoanThanh * 100).round();
 
-  // Chuỗi tiêu đề tuần gọn gàng trên 1 dòng duy nhất, không ghi thứ (Ví dụ: "13/10/2026 (Tuần 42)")
-  String get tieuDeTuan {
+  /// Chuỗi tiêu đề tuần gọn gàng trên 1 dòng duy nhất, hỗ trợ đa ngôn ngữ Tuần / Week
+  String layTieuDeTuan({String nhanTuan = 'Tuần'}) {
     final int tuanSo = _tinhSoTuanTrongNam(_ngayDauTuan);
     final String ngayStr =
         '${_ngayHienTai.day.toString().padLeft(2, '0')}/${_ngayHienTai.month.toString().padLeft(2, '0')}/${_ngayHienTai.year}';
-    return '$ngayStr (Tuần $tuanSo)';
+    return '$ngayStr ($nhanTuan $tuanSo)';
   }
+
+  String get tieuDeTuan => layTieuDeTuan();
 
   /// Chuỗi ngày hiện tại (định dạng dd/MM/yyyy không ghi thứ): ví dụ "13/10/2026"
   String get chuoiNgayHienTai {
@@ -316,6 +331,21 @@ class ScheduleController extends ChangeNotifier {
 
   Future<void> xoaChuoiCongViec(String maChuoiLap) async {
     await _eventRepository.deleteChuoiCongViec(maChuoiLap);
+    await loadDanhSachCongViec();
+  }
+
+  /// Cập nhật toàn bộ chuỗi công việc lặp lại
+  Future<void> capNhatChuoiCongViec({
+    required String maChuoiLap,
+    required CongViecModel mau,
+    List<CongViecModel>? danhSachMoiNeuDoiLich,
+  }) async {
+    if (danhSachMoiNeuDoiLich != null && danhSachMoiNeuDoiLich.isNotEmpty) {
+      await _eventRepository.deleteChuoiCongViec(maChuoiLap);
+      await _eventRepository.createDanhSachCongViec(danhSachMoiNeuDoiLich);
+    } else {
+      await _eventRepository.updateChuoiCongViec(maChuoiLap, mau);
+    }
     await loadDanhSachCongViec();
   }
 }

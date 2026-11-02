@@ -92,9 +92,17 @@ class _LichTuanViewState extends State<_LichTuanView> {
           DichVuThongBao.instance.hoanBaoSnooze(congViec.id, soPhut: 5);
           if (mounted) {
             setState(() => _danhSachBongBong.removeWhere((e) => e.id == congViec.id));
+            SettingsController? settings;
+            try {
+              settings = context.read<SettingsController>();
+            } catch (_) {
+              settings = null;
+            }
+            final String msg = settings?.tr('snoozed_msg', params: {'name': congViec.tenCongViec}) ??
+                'Đã hoãn nhắc nhở "${congViec.tenCongViec}" thêm 5 phút.';
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Đã hoãn nhắc nhở "${congViec.tenCongViec}" thêm 5 phút.'),
+                content: Text(msg),
                 backgroundColor: AppColors.sageGreen,
                 duration: const Duration(seconds: 2),
               ),
@@ -128,9 +136,17 @@ class _LichTuanViewState extends State<_LichTuanView> {
       },
       onHoanBaoSnooze: () {
         DichVuThongBao.instance.hoanBaoSnooze(congViec.id, soPhut: 5);
+        SettingsController? settings;
+        try {
+          settings = context.read<SettingsController>();
+        } catch (_) {
+          settings = null;
+        }
+        final String msg = settings?.tr('snoozed_msg', params: {'name': congViec.tenCongViec}) ??
+            'Đã hoãn nhắc nhở "${congViec.tenCongViec}" thêm 5 phút.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Đã hoãn nhắc nhở "${congViec.tenCongViec}" thêm 5 phút.'),
+            content: Text(msg),
             backgroundColor: AppColors.sageGreen,
             duration: const Duration(seconds: 2),
           ),
@@ -151,6 +167,11 @@ class _LichTuanViewState extends State<_LichTuanView> {
       onDelete: (id) => controller.xoaCongViec(id),
       onSaveBatch: (batch) => controller.luuChuoiCongViec(batch),
       onDeleteSeries: (maChuoi) => controller.xoaChuoiCongViec(maChuoi),
+      onUpdateSeries: (maChuoi, mau, batch) => controller.capNhatChuoiCongViec(
+        maChuoiLap: maChuoi,
+        mau: mau,
+        danhSachMoiNeuDoiLich: batch,
+      ),
     );
   }
 
@@ -177,20 +198,45 @@ class _LichTuanViewState extends State<_LichTuanView> {
       onDelete: (_) {},
       onSaveBatch: (batch) => controller.luuChuoiCongViec(batch),
       onDeleteSeries: (maChuoi) => controller.xoaChuoiCongViec(maChuoi),
+      onUpdateSeries: (maChuoi, mau, batch) => controller.capNhatChuoiCongViec(
+        maChuoiLap: maChuoi,
+        mau: mau,
+        danhSachMoiNeuDoiLich: batch,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    SettingsController? settings;
+    try {
+      settings = context.watch<SettingsController>();
+    } catch (_) {
+      settings = null;
+    }
+
+    final bool isDark = settings?.isDarkMode ?? false;
+
     return Consumer<ScheduleController>(
       builder: (context, controller, child) {
+        // Đồng bộ ngày bắt đầu tuần từ Cài đặt
+        if (settings != null) {
+          final bool laChuNhat = settings.ngayBatDauTuan == 'Chủ Nhật';
+          if (controller.batDauChuNhat != laChuNhat) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              controller.capNhatNgayBatDauTuan(laChuNhat);
+            });
+          }
+        }
+
         return Scaffold(
+          backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFFBF4ED),
           body: Stack(
             children: [
               // 1. Toàn bộ họa tiết nền hữu cơ (Organic Waves) uốn lượn xuyên suốt từ trên xuống dưới
-              const Positioned.fill(
+              Positioned.fill(
                 child: CustomPaint(
-                  painter: BackgroundWavePainter(),
+                  painter: BackgroundWavePainter(isDark: isDark),
                 ),
               ),
 
@@ -201,6 +247,8 @@ class _LichTuanViewState extends State<_LichTuanView> {
                   children: [
                     // A. App Header: Logo Timass, "+ Thêm việc", Chuông thông báo, Avatar
                     AppHeaderWidget(
+                      isDark: isDark,
+                      textThemViec: settings?.tr('add_work'),
                       onThemCongViec: () => _moDialogThemCongViec(context, controller),
                       onThongBao: () {
                         HopThoaiThongBao.show(
@@ -219,7 +267,11 @@ class _LichTuanViewState extends State<_LichTuanView> {
 
                     // B. Thanh điều hướng thời gian: 1 dòng duy nhất "13/10/2026 (Tuần 42)", < >, "Hôm nay"
                     TimeNavigationWidget(
-                      tieuDe: controller.tieuDeTuan,
+                      tieuDe: controller.layTieuDeTuan(
+                        nhanTuan: settings?.tr('week_label') ?? 'Tuần',
+                      ),
+                      isDark: isDark,
+                      nhanHomNay: settings?.tr('today'),
                       onTuanTruoc: controller.chuyenTuanTruoc,
                       onTuanSau: controller.chuyenTuanSau,
                       onHomNay: controller.chuyenDenHomNay,
@@ -228,6 +280,9 @@ class _LichTuanViewState extends State<_LichTuanView> {
                     // C. Bộ chuyển đổi View: Segmented control [ Lịch tuần | Lịch tháng ]
                     ViewSwitcherWidget(
                       selectedIndex: controller.cheDoXem,
+                      isDark: isDark,
+                      nhanLichTuan: settings?.tr('weekly_schedule'),
+                      nhanLichThang: settings?.tr('monthly_schedule'),
                       onIndexChanged: (index) {
                         controller.doiCheDoXem(index);
                       },
@@ -252,7 +307,7 @@ class _LichTuanViewState extends State<_LichTuanView> {
                           );
                         },
                         child: controller.cheDoXem == 0
-                            ? _buildWeeklyView(context, controller)
+                            ? _buildWeeklyView(context, controller, isDark: isDark, settings: settings)
                             : const MonthCalendarView(
                                 key: ValueKey('MonthCalendarView'),
                               ),
@@ -271,9 +326,17 @@ class _LichTuanViewState extends State<_LichTuanView> {
                     DichVuThongBao.instance.hoanBaoSnooze(cv.id, soPhut: 5);
                     if (mounted) {
                       setState(() => _danhSachBongBong.removeWhere((e) => e.id == cv.id));
+                      SettingsController? settings;
+                      try {
+                        settings = context.read<SettingsController>();
+                      } catch (_) {
+                        settings = null;
+                      }
+                      final String msg = settings?.tr('snoozed_msg', params: {'name': cv.tenCongViec}) ??
+                          'Đã hoãn nhắc nhở "${cv.tenCongViec}" thêm 5 phút.';
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Đã hoãn nhắc nhở "${cv.tenCongViec}" thêm 5 phút.'),
+                          content: Text(msg),
                           backgroundColor: AppColors.sageGreen,
                           duration: const Duration(seconds: 2),
                         ),
@@ -293,16 +356,32 @@ class _LichTuanViewState extends State<_LichTuanView> {
     );
   }
 
-  Widget _buildWeeklyView(BuildContext context, ScheduleController controller) {
+  Widget _buildWeeklyView(
+    BuildContext context,
+    ScheduleController controller, {
+    required bool isDark,
+    SettingsController? settings,
+  }) {
     return Column(
       key: const ValueKey('WeeklyScheduleView'),
       children: [
         // Card hiển thị tiến độ công việc trong ngày (Tapping opens ChecklistScreen)
         ProgressCardWidget(
+          isDark: isDark,
           tongSoViec: controller.tongSoViecHomNay,
           soViecDaXong: controller.soViecDaXongHomNay,
           tiLe: controller.tiLeHoanThanh,
           phanTram: controller.phanTramHoanThanh,
+          textHomNayViec: settings?.tr('today_task_count', params: {
+            'done': controller.soViecDaXongHomNay.toString(),
+            'total': controller.tongSoViecHomNay.toString(),
+          }),
+          textDaXong: settings?.tr('completed_percent', params: {
+            'percent': controller.phanTramHoanThanh.toString(),
+          }),
+          labelChuDong: settings?.tr('active_task'),
+          labelBiDong: settings?.tr('passive_task'),
+          labelHoanThanh: settings?.tr('completed_task'),
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(
@@ -324,6 +403,8 @@ class _LichTuanViewState extends State<_LichTuanView> {
                 )
               : WeeklyGridWidget(
                   controller: controller,
+                  isDark: isDark,
+                  ngonNgu: settings?.ngonNgu ?? 'Tiếng Việt',
                 ),
         ),
       ],

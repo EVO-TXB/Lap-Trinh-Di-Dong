@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../cai_dat/controllers/settings_controller.dart';
 import '../models/cong_viec_model.dart';
 
 /// Dialog cảnh báo khi phát hiện trùng lịch trình (Conflict Warning Dialog)
@@ -37,7 +39,19 @@ class ConflictWarningDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String tenViec = congViecBiTrung?.tenCongViec ?? 'công việc khác';
+    SettingsController? settings;
+    try {
+      settings = context.watch<SettingsController>();
+    } catch (_) {
+      settings = null;
+    }
+    final bool isDark = settings?.isDarkMode ?? false;
+    final Color dialogBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final Color titleColor = isDark ? Colors.white : AppColors.darkNavy;
+    final Color textColor = isDark ? const Color(0xFFCBD5E1) : AppColors.textMedium;
+
+    final String fallbackOther = settings?.ngonNgu == 'English' ? 'another event' : 'công việc khác';
+    final String tenViec = congViecBiTrung?.tenCongViec ?? fallbackOther;
     String thoiGian = '';
     if (congViecBiTrung != null) {
       final String start =
@@ -50,7 +64,7 @@ class ConflictWarningDialog extends StatelessWidget {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       elevation: 10,
-      backgroundColor: Colors.white,
+      backgroundColor: dialogBg,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       child: Padding(
         padding: const EdgeInsets.all(22.0),
@@ -66,31 +80,31 @@ class ConflictWarningDialog extends StatelessWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7),
+                    color: isDark ? const Color(0xFF78350F) : const Color(0xFFFEF3C7),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Icon(
                     Icons.warning_amber_rounded,
-                    color: Color(0xFFD97706),
+                    color: Color(0xFFF59E0B),
                     size: 28,
                   ),
                 ),
                 IconButton(
                   onPressed: onSuaLai,
                   icon: const Icon(Icons.close_rounded, color: AppColors.textGrey),
-                  tooltip: 'Đóng',
+                  tooltip: settings?.tr('close_btn') ?? 'Đóng',
                 ),
               ],
             ),
             const SizedBox(height: 16),
 
             // Tiêu đề
-            const Text(
-              'Cảnh báo trùng lịch!',
+            Text(
+              settings?.tr('conflict_warning_title') ?? 'Cảnh báo trùng lịch!',
               style: TextStyle(
                 fontSize: 19,
                 fontWeight: FontWeight.bold,
-                color: AppColors.darkNavy,
+                color: titleColor,
               ),
             ),
             const SizedBox(height: 10),
@@ -98,18 +112,18 @@ class ConflictWarningDialog extends StatelessWidget {
             // Nội dung chi tiết
             RichText(
               text: TextSpan(
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14.5,
-                  color: AppColors.textMedium,
+                  color: textColor,
                   height: 1.45,
                 ),
                 children: [
-                  const TextSpan(text: 'Khung giờ này đã bị trùng với sự kiện '),
+                  TextSpan(text: settings?.tr('conflict_with_event') ?? 'Khung giờ này đã bị trùng với sự kiện '),
                   TextSpan(
                     text: '"$tenViec"',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.darkNavy,
+                      color: titleColor,
                     ),
                   ),
                   if (thoiGian.isNotEmpty) ...[
@@ -118,13 +132,13 @@ class ConflictWarningDialog extends StatelessWidget {
                       text: thoiGian,
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFFB45309),
+                        color: Color(0xFFF59E0B),
                       ),
                     ),
                     const TextSpan(text: ')'),
                   ],
-                  const TextSpan(
-                    text: '!\nVui lòng sửa lại khung giờ để tránh chồng chéo công việc.',
+                  TextSpan(
+                    text: settings?.tr('conflict_adjust_msg') ?? '!\nVui lòng sửa lại khung giờ để tránh chồng chéo công việc.',
                   ),
                 ],
               ),
@@ -139,17 +153,17 @@ class ConflictWarningDialog extends StatelessWidget {
                     onPressed: onSuaLai,
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: const BorderSide(color: AppColors.borderGrey),
+                      side: BorderSide(color: isDark ? const Color(0xFF475569) : AppColors.borderGrey),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      'Sửa lại khung giờ',
+                    child: Text(
+                      settings?.tr('adjust_time_btn') ?? 'Sửa lại khung giờ',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.darkNavy,
+                        color: titleColor,
                       ),
                     ),
                   ),
@@ -168,9 +182,9 @@ class ConflictWarningDialog extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
-                        'Vẫn tiếp tục lưu',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      child: Text(
+                        settings?.tr('save_anyway_btn') ?? 'Vẫn tiếp tục lưu',
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),

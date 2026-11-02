@@ -8,6 +8,8 @@ class MockEventRepository implements IEventRepository {
 
   final List<CongViecModel> _danhSachMock = [];
 
+  List<CongViecModel> get tatCaCongViecHienCo => List.unmodifiable(_danhSachMock);
+
   MockEventRepository._internal() {
     _khoiTaoDuLieuMau();
   }
@@ -68,6 +70,33 @@ class MockEventRepository implements IEventRepository {
         nhacNhoTruocPhut: 15,
         ngayTao: DateTime(nam, thang, 1, 8, 0),
         ghiChu: 'Mang theo laptop và chuẩn bị bài tập lớn',
+        maChuoiLap: 'chuoi_hoc_web',
+      ),
+      CongViecModel(
+        id: 108,
+        maNguoiDung: 1,
+        tenCongViec: 'Học Lập trình Web',
+        thoiGianBatDau: DateTime(nam, thang, 14, 8, 0),
+        thoiGianKetThuc: DateTime(nam, thang, 14, 11, 0),
+        diaDiem: 'A3-402',
+        laThietYeu: false,
+        daHoanThanh: false,
+        nhacNhoTruocPhut: 15,
+        ngayTao: DateTime(nam, thang, 1, 8, 0),
+        maChuoiLap: 'chuoi_hoc_web',
+      ),
+      CongViecModel(
+        id: 109,
+        maNguoiDung: 1,
+        tenCongViec: 'Học Lập trình Web',
+        thoiGianBatDau: DateTime(nam, thang, 16, 8, 0),
+        thoiGianKetThuc: DateTime(nam, thang, 16, 11, 0),
+        diaDiem: 'A3-402',
+        laThietYeu: false,
+        daHoanThanh: false,
+        nhacNhoTruocPhut: 15,
+        ngayTao: DateTime(nam, thang, 1, 8, 0),
+        maChuoiLap: 'chuoi_hoc_web',
       ),
 
       // --- Thứ Ba 13/10/2026 (Nhiều việc để hiển thị 2 chấm + dấu "+") ---
@@ -308,6 +337,71 @@ class MockEventRepository implements IEventRepository {
         ngayTao: DateTime(nam, thang, 1),
       ),
     ]);
+
+    // Tự động sinh dữ liệu thời gian thực xoay quanh ngày hôm nay trên thiết bị
+    _sinhDuLieuThoiGianThuc(DateTime.now());
+  }
+
+  /// Sinh dữ liệu mẫu xoay quanh thời gian thực tế của thiết bị
+  void _sinhDuLieuThoiGianThuc(DateTime now) {
+    final int nam = now.year;
+    final int thang = now.month;
+    final int ngay = now.day;
+
+    // Nếu ngày hôm nay đã trùng với dữ liệu mẫu tháng 10/2026 thì không sinh thêm để tránh trùng lặp
+    if (nam == 2026 && thang == 10 && (ngay == 12 || ngay == 13 || ngay == 14 || ngay == 15 || ngay == 21)) {
+      return;
+    }
+
+    int currentMaxId = _danhSachMock.isEmpty ? 500 : _danhSachMock.map((e) => e.id).reduce((a, b) => a > b ? a : b);
+
+    _danhSachMock.addAll([
+      CongViecModel(
+        id: ++currentMaxId,
+        maNguoiDung: 1,
+        tenCongViec: 'Học Lập trình Flutter & Dart',
+        thoiGianBatDau: DateTime(nam, thang, ngay, 8, 0),
+        thoiGianKetThuc: DateTime(nam, thang, ngay, 10, 30),
+        diaDiem: 'Phòng Lab 3',
+        laThietYeu: false,
+        daHoanThanh: true,
+        ngayTao: now,
+      ),
+      CongViecModel(
+        id: ++currentMaxId,
+        maNguoiDung: 1,
+        tenCongViec: 'Nghỉ trưa & Ăn cơm',
+        thoiGianBatDau: DateTime(nam, thang, ngay, 11, 30),
+        thoiGianKetThuc: DateTime(nam, thang, ngay, 13, 0),
+        diaDiem: 'Căn-tin trường',
+        laThietYeu: true,
+        daHoanThanh: true,
+        ngayTao: now,
+      ),
+      CongViecModel(
+        id: ++currentMaxId,
+        maNguoiDung: 1,
+        tenCongViec: 'Thực hành dự án Timass',
+        thoiGianBatDau: DateTime(nam, thang, ngay, 14, 0),
+        thoiGianKetThuc: DateTime(nam, thang, ngay, 16, 30),
+        diaDiem: 'A3-402',
+        laThietYeu: false,
+        daHoanThanh: false,
+        nhacNhoTruocPhut: 15,
+        ngayTao: now,
+      ),
+      CongViecModel(
+        id: ++currentMaxId,
+        maNguoiDung: 1,
+        tenCongViec: 'Tập thể thao & Tự học',
+        thoiGianBatDau: DateTime(nam, thang, ngay, 18, 0),
+        thoiGianKetThuc: DateTime(nam, thang, ngay, 19, 30),
+        diaDiem: 'Sân trường',
+        laThietYeu: false,
+        daHoanThanh: false,
+        ngayTao: now,
+      ),
+    ]);
   }
 
   @override
@@ -411,6 +505,8 @@ class MockEventRepository implements IEventRepository {
           loaiSuKien: mauCapNhat.loaiSuKien,
           laThietYeu: mauCapNhat.laThietYeu,
           diaDiem: mauCapNhat.diaDiem,
+          ghiChu: mauCapNhat.ghiChu,
+          nhacNhoTruocPhut: mauCapNhat.nhacNhoTruocPhut,
           thoiGianBatDau: batDauMoi,
           thoiGianKetThuc: ketThucMoi,
         );

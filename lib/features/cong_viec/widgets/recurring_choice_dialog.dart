@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../cai_dat/controllers/settings_controller.dart';
 
 /// Phạm vi áp dụng cho công việc lặp lại
 enum RecurringScope {
@@ -40,23 +42,35 @@ class RecurringChoiceDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    SettingsController? settings;
+    try {
+      settings = context.watch<SettingsController>();
+    } catch (_) {
+      settings = null;
+    }
+    final bool isDark = settings?.isDarkMode ?? false;
     final bool isXoa = actionType == RecurringActionType.xoa;
 
     final String tieuDe = isXoa
-        ? 'Xóa công việc lặp lại'
-        : 'Chỉnh sửa công việc lặp lại';
+        ? (settings?.tr('recurring_delete_title') ?? 'Xóa công việc lặp lại')
+        : (settings?.tr('recurring_edit_title') ?? 'Chỉnh sửa công việc lặp lại');
 
     final String moTa = isXoa
-        ? 'Công việc này nằm trong một chuỗi lịch trình lặp lại hàng tuần. Bạn muốn thực hiện xóa như thế nào?'
-        : 'Công việc này nằm trong một chuỗi lịch trình lặp lại hàng tuần. Bạn muốn áp dụng thay đổi này như thế nào?';
+        ? (settings?.tr('recurring_delete_desc') ??
+            'Công việc này nằm trong một chuỗi lịch trình lặp lại hàng tuần. Bạn muốn thực hiện xóa như thế nào?')
+        : (settings?.tr('recurring_edit_desc') ??
+            'Công việc này nằm trong một chuỗi lịch trình lặp lại hàng tuần. Bạn muốn áp dụng thay đổi này như thế nào?');
 
-    final String nut1Text = isXoa ? 'Chỉ xóa sự kiện này' : 'Áp dụng chỉ 1 sự kiện này';
-    final String nut2Text =
-        isXoa ? 'Xóa toàn bộ chuỗi sự kiện lặp' : 'Áp dụng cho toàn bộ chuỗi sự kiện lặp';
+    final String nut1Text = isXoa
+        ? (settings?.tr('delete_single_event') ?? 'Chỉ xóa sự kiện này')
+        : (settings?.tr('apply_single_event') ?? 'Áp dụng chỉ 1 sự kiện này');
+    final String nut2Text = isXoa
+        ? (settings?.tr('delete_all_series') ?? 'Xóa toàn bộ chuỗi sự kiện lặp')
+        : (settings?.tr('apply_all_series') ?? 'Áp dụng cho toàn bộ chuỗi sự kiện lặp');
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       child: Padding(
         padding: const EdgeInsets.all(22.0),
@@ -86,7 +100,7 @@ class RecurringChoiceDialog extends StatelessWidget {
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(null),
                   icon: const Icon(Icons.close_rounded, color: AppColors.textGrey),
-                  tooltip: 'Đóng',
+                  tooltip: settings?.tr('close_tooltip') ?? 'Đóng',
                 ),
               ],
             ),
@@ -95,10 +109,10 @@ class RecurringChoiceDialog extends StatelessWidget {
             // Tiêu đề
             Text(
               tieuDe,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18.5,
                 fontWeight: FontWeight.bold,
-                color: AppColors.darkNavy,
+                color: isDark ? Colors.white : AppColors.darkNavy,
               ),
             ),
             const SizedBox(height: 8),
@@ -106,9 +120,9 @@ class RecurringChoiceDialog extends StatelessWidget {
             // Mô tả
             Text(
               moTa,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: AppColors.textMedium,
+                color: isDark ? const Color(0xFF94A3B8) : AppColors.textMedium,
                 height: 1.45,
               ),
             ),
@@ -130,10 +144,10 @@ class RecurringChoiceDialog extends StatelessWidget {
                   ),
                   child: Text(
                     nut1Text,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.darkNavy,
+                      color: isDark ? Colors.white : AppColors.darkNavy,
                     ),
                   ),
                 ),

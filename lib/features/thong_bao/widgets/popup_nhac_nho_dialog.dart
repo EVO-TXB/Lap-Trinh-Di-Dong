@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../cai_dat/controllers/settings_controller.dart';
 import '../../../core/thong_bao/dich_vu_thong_bao.dart';
 import '../../cong_viec/models/cong_viec_model.dart';
 import 'dong_ho_bao_thuc_3d_widget.dart';
@@ -56,12 +58,27 @@ class PopupNhacNhoDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    SettingsController? settings;
+    try {
+      settings = context.watch<SettingsController>();
+    } catch (_) {
+      settings = null;
+    }
+    final bool isDark = settings?.isDarkMode ?? false;
+    final Color dialogBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final Color titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final Color subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     // Định dạng giờ hiển thị (Ví dụ: 07:30)
     final String gioBatDau = DateFormat('HH:mm').format(congViec.thoiGianBatDau);
-    final String diaDiem = (congViec.diaDiem != null && congViec.diaDiem!.isNotEmpty)
-        ? ' tại ${congViec.diaDiem}'
+    final String atLoc = (congViec.diaDiem != null && congViec.diaDiem!.isNotEmpty)
+        ? (settings?.tr('at_location', params: {'loc': congViec.diaDiem!}) ?? ' tại ${congViec.diaDiem}')
         : '';
-    final String dongPhu = 'Bắt đầu sau ${congViec.nhacNhoTruocPhut} phút nữa ($gioBatDau$diaDiem)';
+    final String dongPhu = settings?.tr('reminder_starts_in', params: {
+      'm': congViec.nhacNhoTruocPhut.toString(),
+      'time': gioBatDau,
+      'loc': atLoc,
+    }) ?? 'Bắt đầu sau ${congViec.nhacNhoTruocPhut} phút nữa ($gioBatDau$atLoc)';
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -70,7 +87,7 @@ class PopupNhacNhoDialog extends StatelessWidget {
         child: Container(
           constraints: const BoxConstraints(maxWidth: 400),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: dialogBg,
             borderRadius: BorderRadius.circular(24.0),
             boxShadow: [
               BoxShadow(
@@ -113,10 +130,10 @@ class PopupNhacNhoDialog extends StatelessWidget {
                     ),
                     const SizedBox(width: 8.0),
                     // Tiêu đề header
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Timass • Nhắc nhở sắp đến giờ',
-                        style: TextStyle(
+                        settings?.tr('reminder_upcoming') ?? 'Timass • Nhắc nhở sắp đến giờ',
+                        style: const TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF64748B),
@@ -161,10 +178,10 @@ class PopupNhacNhoDialog extends StatelessWidget {
                           ? congViec.tenCongViec
                           : 'Lập trình Web nâng cao',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20.0,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF0F172A),
+                        color: titleColor,
                         letterSpacing: -0.3,
                         height: 1.25,
                       ),
@@ -173,10 +190,10 @@ class PopupNhacNhoDialog extends StatelessWidget {
                     Text(
                       dongPhu,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF64748B),
+                        color: subColor,
                         height: 1.35,
                       ),
                     ),
@@ -209,8 +226,8 @@ class PopupNhacNhoDialog extends StatelessWidget {
                                 foregroundColor: const Color(0xFF475569),
                               ),
                               onPressed: onDong ?? () => Navigator.of(context).pop(),
-                              child: const Text(
-                                'Đóng',
+                              child: Text(
+                                settings?.tr('close_btn') ?? 'Đóng',
                                 style: TextStyle(
                                   fontSize: 14.5,
                                   fontWeight: FontWeight.w600,
@@ -236,24 +253,24 @@ class PopupNhacNhoDialog extends StatelessWidget {
                                 foregroundColor: Colors.white,
                               ),
                               onPressed: onXemChiTiet,
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Flexible(
                                     child: Text(
-                                      'Xem chi tiết',
+                                      settings?.tr('view_details_btn') ?? 'Xem chi tiết',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 14.0,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.white,
                                       ),
                                     ),
                                   ),
-                                  SizedBox(width: 4.0),
-                                  Icon(Icons.arrow_forward_rounded, size: 16.0, color: Colors.white),
+                                  const SizedBox(width: 4.0),
+                                  const Icon(Icons.arrow_forward_rounded, size: 16.0, color: Colors.white),
                                 ],
                               ),
                             ),
@@ -269,8 +286,8 @@ class PopupNhacNhoDialog extends StatelessWidget {
                         visualDensity: VisualDensity.compact,
                       ),
                       icon: const Icon(Icons.snooze_rounded, size: 16.0),
-                      label: const Text(
-                        'Nhắc lại sau 5 phút (Snooze)',
+                      label: Text(
+                        settings?.tr('snooze_5m_label') ?? 'Nhắc lại sau 5 phút (Snooze)',
                         style: TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
@@ -282,7 +299,7 @@ class PopupNhacNhoDialog extends StatelessWidget {
                             Navigator.of(context).pop();
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Đã hoãn nhắc việc "${congViec.tenCongViec}" thêm 5 phút'),
+                                content: Text(settings?.tr('snoozed_msg', params: {'name': congViec.tenCongViec}) ?? 'Đã hoãn nhắc việc "${congViec.tenCongViec}" thêm 5 phút'),
                                 duration: const Duration(seconds: 2),
                                 behavior: SnackBarBehavior.floating,
                               ),

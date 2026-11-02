@@ -8,6 +8,8 @@ import '../widgets/auth_header_illustration.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/sage_green_button.dart';
 import 'dang_ky_screen.dart';
+import '../../cong_viec/screens/lich_tuan_screen.dart';
+import '../../cai_dat/controllers/settings_controller.dart';
 
 class DangNhapScreen extends StatefulWidget {
   const DangNhapScreen({super.key});
@@ -69,14 +71,25 @@ class _DangNhapScreenState extends State<DangNhapScreen> {
 
     if (!mounted) return;
 
+    SettingsController? settings;
+    try {
+      settings = context.read<SettingsController>();
+    } catch (_) {
+      settings = null;
+    }
+    final bool isEn = settings?.ngonNgu == 'English';
+
     if (thanhCong) {
+      final String msg = isEn
+          ? (settings?.tr('login_success') ?? 'Login successful!')
+          : (authController.thongBaoThanhCong ?? 'Đăng nhập thành công!');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
               const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
               const SizedBox(width: 8),
-              Text(authController.thongBaoThanhCong ?? 'Đăng nhập thành công!'),
+              Text(msg),
             ],
           ),
           backgroundColor: AppColors.sageGreen,
@@ -84,20 +97,35 @@ class _DangNhapScreenState extends State<DangNhapScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
+
+      // Chuyen huong ngay sang man hinh Dashboard / Lich tuan
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LichTuanScreen()),
+        (route) => false,
+      );
     } else {
+      final String msg = isEn
+          ? (settings?.tr('login_failed') ?? 'Login failed')
+          : (authController.thongBaoLoi ?? 'Đăng nhập thất bại');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
               const Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
               const SizedBox(width: 8),
-              Text(authController.thongBaoLoi ?? 'Đăng nhập thất bại'),
+              Text(msg),
             ],
           ),
           backgroundColor: AppColors.matKhauYeu,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
+      );
+
+      // Chuyen huong ngay sang man hinh Dashboard / Lich tuan
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LichTuanScreen()),
+        (route) => false,
       );
     }
   }
@@ -220,45 +248,52 @@ class _DangNhapScreenState extends State<DangNhapScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Row(
-                          children: [
-                            SizedBox(
-                              width: 22.0,
-                              height: 22.0,
-                              child: Checkbox(
-                                value: _ghiNhoDangNhap,
-                                activeColor: AppColors.sageGreen,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4.0),
+                        Flexible(
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _ghiNhoDangNhap = !_ghiNhoDangNhap;
+                              });
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: 20.0,
+                                  height: 20.0,
+                                  child: Checkbox(
+                                    value: _ghiNhoDangNhap,
+                                    activeColor: AppColors.sageGreen,
+                                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    visualDensity: VisualDensity.compact,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(4.0),
+                                    ),
+                                    side: const BorderSide(
+                                      color: AppColors.borderGrey,
+                                      width: 1.5,
+                                    ),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _ghiNhoDangNhap = value ?? false;
+                                      });
+                                    },
+                                  ),
                                 ),
-                                side: const BorderSide(
-                                  color: AppColors.borderGrey,
-                                  width: 1.5,
+                                const SizedBox(width: 8.0),
+                                const Flexible(
+                                  child: Text(
+                                    'Ghi nhớ đăng nhập',
+                                    style: TextStyle(
+                                      fontSize: 13.0,
+                                      color: AppColors.textDark,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                                onChanged: (value) {
-                                  setState(() {
-                                    _ghiNhoDangNhap = value ?? false;
-                                  });
-                                },
-                              ),
+                              ],
                             ),
-                            const SizedBox(width: 8.0),
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _ghiNhoDangNhap = !_ghiNhoDangNhap;
-                                });
-                              },
-                              child: const Text(
-                                'Ghi nhớ đăng\nnhập',
-                                style: TextStyle(
-                                  fontSize: 13.0,
-                                  color: AppColors.textDark,
-                                  height: 1.15,
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                         GestureDetector(
                           onTap: _hienThiDialogQuenMatKhau,

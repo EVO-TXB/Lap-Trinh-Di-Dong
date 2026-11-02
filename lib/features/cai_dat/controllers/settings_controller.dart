@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/bo_nho/bo_nho_dich_vu.dart';
+import '../../../core/localization/app_translations.dart';
 import '../../../core/thong_bao/cai_dat_thong_bao_model.dart';
 import '../../../core/thong_bao/dich_vu_thong_bao.dart';
 import '../models/cai_dat_model.dart';
@@ -34,6 +35,22 @@ class SettingsController extends ChangeNotifier {
   String get ngonNgu => _caiDat.ngonNgu;
   String get cheDoGiaoDien => _caiDat.cheDoGiaoDien;
   DateTime get thoiGianDongBoLanCuoi => _caiDat.thoiGianDongBoLanCuoi;
+
+  /// Getter ThemeMode tương thích với MaterialApp
+  ThemeMode get themeMode {
+    if (_caiDat.cheDoGiaoDien == 'Tối') {
+      return ThemeMode.dark;
+    }
+    return ThemeMode.light;
+  }
+
+  /// Kiểm tra có đang bật chế độ tối không
+  bool get isDarkMode => _caiDat.cheDoGiaoDien == 'Tối';
+
+  /// Dịch chuỗi theo ngôn ngữ đang chọn
+  String tr(String key, {Map<String, String>? params}) {
+    return AppTranslations.tr(key, language: _caiDat.ngonNgu, params: params);
+  }
 
   /// Khởi tạo và nạp cấu hình từ bộ nhớ cục bộ
   Future<void> khoiTao() async {

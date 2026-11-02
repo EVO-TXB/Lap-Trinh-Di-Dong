@@ -19,6 +19,7 @@ void main() {
   late AuthController authController;
 
   setUp(() async {
+    BoNhoDichVu.resetForTesting();
     SharedPreferences.setMockInitialValues({});
     boNhoDichVu = await BoNhoDichVu.getInstance();
     settingsController = SettingsController(boNhoDichVu: boNhoDichVu);
@@ -32,6 +33,46 @@ void main() {
   });
 
   group('CaiDatModel & SettingsController Tests', () {
+
+    test('Kiem tra chuyen doi ngon ngu va dich chuoi AppTranslations', () async {
+      expect(settingsController.tr('settings'), equals('Cài đặt'));
+      expect(settingsController.tr('weekly_schedule'), equals('Lịch tuần'));
+
+      await settingsController.capNhatNgonNgu('English');
+      expect(settingsController.ngonNgu, equals('English'));
+      expect(settingsController.tr('settings'), equals('Settings'));
+      expect(settingsController.tr('weekly_schedule'), equals('Weekly View'));
+      expect(settingsController.tr('today'), equals('Today'));
+      expect(settingsController.tr('week_label'), equals('Week'));
+      expect(
+        settingsController.tr('today_task_count', params: {'done': '5', 'total': '8'}),
+        equals('Today: 5/8 tasks'),
+      );
+      expect(
+        settingsController.tr('completed_percent', params: {'percent': '63'}),
+        equals('done (63%)'),
+      );
+
+      // Đổi lại Tiếng Việt
+      await settingsController.capNhatNgonNgu('Tiếng Việt');
+      expect(settingsController.ngonNgu, equals('Tiếng Việt'));
+      expect(settingsController.tr('settings'), equals('Cài đặt'));
+    });
+
+    test('Kiem tra chuyen doi che do giao dien Sang va Toi (Dark Mode)', () async {
+      expect(settingsController.cheDoGiaoDien, equals('Sáng'));
+      expect(settingsController.themeMode, equals(ThemeMode.light));
+      expect(settingsController.isDarkMode, isFalse);
+
+      await settingsController.capNhatCheDoGiaoDien('Tối');
+      expect(settingsController.cheDoGiaoDien, equals('Tối'));
+      expect(settingsController.themeMode, equals(ThemeMode.dark));
+      expect(settingsController.isDarkMode, isTrue);
+
+      await settingsController.capNhatCheDoGiaoDien('Sáng');
+      expect(settingsController.themeMode, equals(ThemeMode.light));
+      expect(settingsController.isDarkMode, isFalse);
+    });
     test('Khoi tao cai dat mac dinh chinh xac', () {
       final caiDat = CaiDatModel.macDinh();
       expect(caiDat.tuDongTichViecThietYeu, isTrue);

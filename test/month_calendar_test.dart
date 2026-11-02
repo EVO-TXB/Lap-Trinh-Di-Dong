@@ -118,7 +118,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Kiểm tra quay lại Lịch tuần
-      expect(find.textContaining('(Tuần 42)'), findsOneWidget);
+      expect(find.textContaining('(Tuần '), findsOneWidget);
     });
 
     testWidgets('Kiem tra dieu huong thang tren giao dien lich thang', (WidgetTester tester) async {

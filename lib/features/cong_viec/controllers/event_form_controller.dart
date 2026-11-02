@@ -23,9 +23,12 @@ class EventFormController extends ChangeNotifier {
   bool _isSubmitting = false;
   String? _thongBaoLoi;
 
+  late final Set<int> _cacThuBanDau;
+
   EventFormController({
     this.congViecGoc,
     DateTime? ngayMacDinh,
+    List<CongViecModel>? danhSachHienCo,
   }) {
     final DateTime now = ngayMacDinh ?? DateTime.now();
 
@@ -41,9 +44,33 @@ class EventFormController extends ChangeNotifier {
       _gioBatDau = TimeOfDay.fromDateTime(congViecGoc!.thoiGianBatDau);
       _gioKetThuc = TimeOfDay.fromDateTime(congViecGoc!.thoiGianKetThuc);
       _coLapLai = congViecGoc!.coLapLai;
-      _cacThuDaChon = {BatchEventHelper.weekdayToThuTimass(congViecGoc!.thoiGianBatDau.weekday)};
-      _ngayBatDauLap = _ngayThucHien;
-      _ngayKetThucLap = _ngayThucHien.add(const Duration(days: 70));
+
+      final String? maChuoi = congViecGoc!.maChuoiLap ?? congViecGoc!.maQuyTacLap?.toString();
+      final List<CongViecModel> seriesEvents = (danhSachHienCo != null && maChuoi != null)
+          ? danhSachHienCo.where((e) => e.maChuoiLap == maChuoi || e.maQuyTacLap?.toString() == maChuoi).toList()
+          : [];
+
+      if (seriesEvents.isNotEmpty) {
+        _cacThuDaChon = seriesEvents
+            .map((e) => BatchEventHelper.weekdayToThuTimass(e.thoiGianBatDau.weekday))
+            .toSet();
+        seriesEvents.sort((a, b) => a.thoiGianBatDau.compareTo(b.thoiGianBatDau));
+        _ngayBatDauLap = DateTime(
+          seriesEvents.first.thoiGianBatDau.year,
+          seriesEvents.first.thoiGianBatDau.month,
+          seriesEvents.first.thoiGianBatDau.day,
+        );
+        _ngayKetThucLap = DateTime(
+          seriesEvents.last.thoiGianKetThuc.year,
+          seriesEvents.last.thoiGianKetThuc.month,
+          seriesEvents.last.thoiGianKetThuc.day,
+        );
+      } else {
+        _cacThuDaChon = {BatchEventHelper.weekdayToThuTimass(congViecGoc!.thoiGianBatDau.weekday)};
+        _ngayBatDauLap = _ngayThucHien;
+        _ngayKetThucLap = _ngayThucHien.add(const Duration(days: 70));
+      }
+      _cacThuBanDau = Set<int>.from(_cacThuDaChon);
     } else {
       _tenCongViec = '';
       _diaDiem = '';
@@ -56,7 +83,16 @@ class EventFormController extends ChangeNotifier {
       _cacThuDaChon = {2, 4, 6};
       _ngayBatDauLap = _ngayThucHien;
       _ngayKetThucLap = DateTime(_ngayThucHien.year, 12, 30);
+      _cacThuBanDau = Set<int>.from(_cacThuDaChon);
     }
+  }
+
+  bool get daThayDoiQuyTacLap {
+    if (congViecGoc == null) return false;
+    if (_coLapLai != congViecGoc!.coLapLai) return true;
+    if (!_coLapLai) return false;
+    if (_cacThuDaChon.length != _cacThuBanDau.length) return true;
+    return !_cacThuDaChon.containsAll(_cacThuBanDau);
   }
 
   // Getters
@@ -158,24 +194,32 @@ class EventFormController extends ChangeNotifier {
   }
 
   /// Kiểm tra hợp lệ dữ liệu nhập (Validation)
-  String? validateForm() {
+  String? validateForm({String? Function(String key)? tr}) {
     if (_tenCongViec.trim().isEmpty) {
-      return 'Vui lòng nhập tên công việc hoặc môn học.';
+      return tr != null
+          ? tr('err_empty_task_title')
+          : 'Vui lòng nhập tên công việc hoặc môn học.';
     }
 
     final int startMinutes = _gioBatDau.hour * 60 + _gioBatDau.minute;
     final int endMinutes = _gioKetThuc.hour * 60 + _gioKetThuc.minute;
 
     if (startMinutes >= endMinutes) {
-      return 'Giờ bắt đầu phải sớm hơn giờ kết thúc.';
+      return tr != null
+          ? tr('err_time_order')
+          : 'Giờ bắt đầu phải sớm hơn giờ kết thúc.';
     }
 
     if (_coLapLai) {
       if (_cacThuDaChon.isEmpty) {
-        return 'Vui lòng chọn ít nhất một thứ trong tuần để lặp lại.';
+        return tr != null
+            ? tr('err_select_weekday')
+            : 'Vui lòng chọn ít nhất một thứ trong tuần để lặp lại.';
       }
       if (_ngayKetThucLap.isBefore(_ngayBatDauLap)) {
-        return 'Ngày kết thúc lặp phải sau hoặc bằng ngày bắt đầu.';
+        return tr != null
+            ? tr('err_repeat_dates')
+            : 'Ngày kết thúc lặp phải sau hoặc bằng ngày bắt đầu.';
       }
     }
 

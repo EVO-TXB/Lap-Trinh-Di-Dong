@@ -10,6 +10,7 @@ class EventDetailDialog extends StatelessWidget {
   final ValueChanged<int> onDelete;
   final Future<void> Function(List<CongViecModel>)? onSaveBatch;
   final Future<void> Function(String)? onDeleteSeries;
+  final Future<void> Function(String maChuoiLap, CongViecModel mauCapNhat, List<CongViecModel>? danhSachMoi)? onUpdateSeries;
   final List<CongViecModel>? danhSachHienCo;
 
   const EventDetailDialog({
@@ -19,6 +20,7 @@ class EventDetailDialog extends StatelessWidget {
     required this.onDelete,
     this.onSaveBatch,
     this.onDeleteSeries,
+    this.onUpdateSeries,
     this.danhSachHienCo,
   });
 
@@ -29,6 +31,7 @@ class EventDetailDialog extends StatelessWidget {
     required ValueChanged<int> onDelete,
     Future<void> Function(List<CongViecModel>)? onSaveBatch,
     Future<void> Function(String)? onDeleteSeries,
+    Future<void> Function(String maChuoiLap, CongViecModel mauCapNhat, List<CongViecModel>? danhSachMoi)? onUpdateSeries,
     List<CongViecModel>? danhSachHienCo,
   }) {
     return EventFormBottomSheet.show(
@@ -40,6 +43,7 @@ class EventDetailDialog extends StatelessWidget {
       onSaveBatch: onSaveBatch,
       onDeleteSingle: (id) async => onDelete(id),
       onDeleteSeries: onDeleteSeries,
+      onUpdateSeries: onUpdateSeries,
     );
   }
 
@@ -52,6 +56,7 @@ class EventDetailDialog extends StatelessWidget {
       onSaveBatch: onSaveBatch,
       onDeleteSingle: (id) async => onDelete(id),
       onDeleteSeries: onDeleteSeries,
+      onUpdateSeries: onUpdateSeries,
     );
   }
 }

@@ -7,6 +7,7 @@ import '../services/auth_validation.dart';
 import '../widgets/auth_header_illustration.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/sage_green_button.dart';
+import '../../cai_dat/controllers/settings_controller.dart';
 import '../widgets/thanh_do_do_manh_mat_khau.dart';
 
 class DangKyScreen extends StatefulWidget {
@@ -59,10 +60,18 @@ class _DangKyScreenState extends State<DangKyScreen> {
       return;
     }
 
+    SettingsController? settings;
+    try {
+      settings = context.read<SettingsController>();
+    } catch (_) {
+      settings = null;
+    }
+    final bool isEn = settings?.ngonNgu == 'English';
+
     if (!_dongYDieuKhoan) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng đồng ý với Điều khoản dịch vụ và Chính sách bảo mật'),
+        SnackBar(
+          content: Text(settings?.tr('terms_agreement_required') ?? 'Vui lòng đồng ý với Điều khoản dịch vụ và Chính sách bảo mật'),
           backgroundColor: AppColors.matKhauTrungBinh,
           behavior: SnackBarBehavior.floating,
         ),
@@ -80,6 +89,9 @@ class _DangKyScreenState extends State<DangKyScreen> {
     if (!mounted) return;
 
     if (thanhCong) {
+      final String msg = isEn
+          ? (settings?.tr('register_success') ?? 'Account created successfully!')
+          : (authController.thongBaoThanhCong ?? 'Tạo tài khoản thành công!');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -87,7 +99,7 @@ class _DangKyScreenState extends State<DangKyScreen> {
               const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(authController.thongBaoThanhCong ?? 'Tạo tài khoản thành công!'),
+                child: Text(msg),
               ),
             ],
           ),
@@ -104,6 +116,9 @@ class _DangKyScreenState extends State<DangKyScreen> {
         Navigator.pop(context);
       }
     } else {
+      final String msg = isEn
+          ? (settings?.tr('register_failed') ?? 'Registration failed')
+          : (authController.thongBaoLoi ?? 'Đăng ký thất bại');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -111,7 +126,7 @@ class _DangKyScreenState extends State<DangKyScreen> {
               const Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(authController.thongBaoLoi ?? 'Đăng ký thất bại'),
+                child: Text(msg),
               ),
             ],
           ),

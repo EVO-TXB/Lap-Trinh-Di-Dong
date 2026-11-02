@@ -13,6 +13,11 @@ class BoNhoDichVu {
 
   BoNhoDichVu._();
 
+  static void resetForTesting() {
+    _instance = null;
+    _prefs = null;
+  }
+
   static Future<BoNhoDichVu> getInstance() async {
     if (_instance == null) {
       _instance = BoNhoDichVu._();

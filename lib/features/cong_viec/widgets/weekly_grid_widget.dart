@@ -9,15 +9,19 @@ import 'event_detail_dialog.dart';
 /// Lưới thời gian Lịch Tuần (Weekly Time Grid):
 /// - Nền bán trong suốt để các họa tiết hữu cơ bên dưới xuyên qua
 /// - Cột mốc giờ bên trái (06:00 -> 22:00)
-/// - 7 cột thứ trong tuần: T2 12, T3 13, T4 14, T5 15, T6 16, T7 17, CN 18
-/// - Vạch ngang màu đỏ tươi hiển thị GIỜ HIỆN TẠI kèm badge đỏ 18:00
-/// - Card sự kiện đặt chính xác theo khung giờ (Top/Height)
+/// - 7 cột thứ trong tuần: T2 12, T3 13... (hoặc Mon 12, Tue 13...)
+/// - Vạch ngang màu đỏ tươi hiển thị GIỜ HIỆN TẠI kèm badge đỏ
+/// - Hỗ trợ Dark Mode và Đa ngôn ngữ (Tiếng Việt / English)
 class WeeklyGridWidget extends StatefulWidget {
   final ScheduleController controller;
+  final bool isDark;
+  final String ngonNgu;
 
   const WeeklyGridWidget({
     super.key,
     required this.controller,
+    this.isDark = false,
+    this.ngonNgu = 'Tiếng Việt',
   });
 
   @override
@@ -47,7 +51,7 @@ class _WeeklyGridWidgetState extends State<WeeklyGridWidget> {
       }
     });
 
-    // Tự động cuộn đến gần vạch đỏ (khoảng 07:30) sau khi dựng xong giao diện
+    // Tự động cuộn đến gần vạch đỏ sau khi dựng xong giao diện
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_verticalScrollController.hasClients) {
         final double targetOffset = (7.5 - ScheduleController.startHour) * ScheduleController.hourHeight;
@@ -73,7 +77,7 @@ class _WeeklyGridWidgetState extends State<WeeklyGridWidget> {
     final int totalHours = ScheduleController.endHour - ScheduleController.startHour;
     final double totalGridHeight = totalHours * ScheduleController.hourHeight;
 
-    // Danh sách 7 ngày trong tuần từ Thứ Hai
+    // Danh sách 7 ngày trong tuần
     final List<DateTime> cacNgayTrongTuan = List.generate(7, (index) {
       return widget.controller.ngayDauTuan.add(Duration(days: index));
     });
@@ -84,16 +88,22 @@ class _WeeklyGridWidgetState extends State<WeeklyGridWidget> {
     return Container(
       margin: const EdgeInsets.only(top: 8.0),
       decoration: BoxDecoration(
-        // Nền màu trắng bán trong suốt (alpha: 0.78) cho phép các họa tiết hữu cơ phía sau xuyên qua
-        color: Colors.white.withValues(alpha: 0.78),
+        // Nền màu bán trong suốt thích ứng Light / Dark Mode
+        color: widget.isDark
+            ? const Color(0xFF1E293B).withValues(alpha: 0.90)
+            : Colors.white.withValues(alpha: 0.78),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         children: [
-          // 1. DÒNG HEADER: Cột trống + 7 Cột Thứ trong tuần (T2 12, T3 13...)
+          // 1. DÒNG HEADER: Cột trống + 7 Cột Thứ trong tuần
           _buildHeaderRow(cacNgayTrongTuan),
 
-          const Divider(height: 1, thickness: 1, color: Color(0xFFEADBDB)),
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: widget.isDark ? const Color(0xFF334155) : const Color(0xFFEADBDB),
+          ),
 
           // 2. THÂN LƯỚI THỜI GIAN (Cuộn dọc)
           Expanded(
@@ -105,10 +115,10 @@ class _WeeklyGridWidgetState extends State<WeeklyGridWidget> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Cột mốc giờ bên trái (Cố định theo phương ngang)
+                    // Cột mốc giờ bên trái
                     _buildTimeAxisColumn(totalHours, redLineTop, redLineTimeText),
 
-                    // 7 cột ngày của lưới lịch (Cuộn ngang đồng bộ)
+                    // 7 cột ngày của lưới lịch
                     Expanded(
                       child: SingleChildScrollView(
                         controller: _horizontalBodyController,
@@ -119,7 +129,7 @@ class _WeeklyGridWidgetState extends State<WeeklyGridWidget> {
                           height: totalGridHeight,
                           child: Stack(
                             children: [
-                              // Các đường kẻ ngang và dọc của lưới có tông ấm đồng bộ
+                              // Các đường kẻ ngang và dọc của lưới
                               _buildGridLines(totalHours),
 
                               // Các cột chứa sự kiện
@@ -132,8 +142,10 @@ class _WeeklyGridWidgetState extends State<WeeklyGridWidget> {
                                 }),
                               ),
 
-                              // Vạch ngang đỏ tươi hiển thị GIỜ HIỆN TẠI (chỉ hiển thị khi tuần đang xem chứa ngày hôm nay)
-                              if (widget.controller.tuanDangXemChuaHomNay && redLineTop >= 0 && redLineTop <= totalGridHeight)
+                              // Vạch ngang đỏ tươi hiển thị GIỜ HIỆN TẠI
+                              if (widget.controller.tuanDangXemChuaHomNay &&
+                                  redLineTop >= 0 &&
+                                  redLineTop <= totalGridHeight)
                                 Positioned(
                                   top: redLineTop,
                                   left: 0,
@@ -158,19 +170,26 @@ class _WeeklyGridWidgetState extends State<WeeklyGridWidget> {
     );
   }
 
-  /// Dòng Header hiển thị tiêu đề các thứ (T2 12, T3 13, T4 14, T5 15...)
+  /// Dòng Header hiển thị tiêu đề các thứ (T2 12, T3 13... hoặc Mon 12, Tue 13...)
   Widget _buildHeaderRow(List<DateTime> cacNgayTrongTuan) {
-    final List<String> tenThuVietTat = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+    final bool isEnglish = widget.ngonNgu == 'English';
+    final List<String> tenThuVietTat;
+    if (widget.controller.batDauChuNhat) {
+      tenThuVietTat = isEnglish
+          ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+          : ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+    } else {
+      tenThuVietTat = isEnglish
+          ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+          : ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+    }
 
     return Container(
       height: 44,
       padding: const EdgeInsets.only(top: 6),
       child: Row(
         children: [
-          // Ô trống phía trên cột mốc giờ
           const SizedBox(width: timeColumnWidth),
-
-          // 7 Cột thứ cuộn ngang
           Expanded(
             child: SingleChildScrollView(
               controller: _horizontalHeaderController,
@@ -213,10 +232,12 @@ class _WeeklyGridWidgetState extends State<WeeklyGridWidget> {
                             )
                           : Text(
                               thuText,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textDark,
+                                color: widget.isDark
+                                    ? const Color(0xFF94A3B8)
+                                    : AppColors.textDark,
                               ),
                             ),
                     );
@@ -235,13 +256,13 @@ class _WeeklyGridWidgetState extends State<WeeklyGridWidget> {
     return Container(
       width: timeColumnWidth,
       decoration: BoxDecoration(
-        // Nền nhẹ đồng bộ để làm nổi bật mốc giờ
-        color: Colors.white.withValues(alpha: 0.35),
+        color: widget.isDark
+            ? const Color(0xFF0F172A).withValues(alpha: 0.5)
+            : Colors.white.withValues(alpha: 0.35),
       ),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // Danh sách các mốc giờ
           Column(
             children: List.generate(totalHours, (index) {
               final int hour = ScheduleController.startHour + index;
@@ -253,17 +274,18 @@ class _WeeklyGridWidgetState extends State<WeeklyGridWidget> {
                 padding: const EdgeInsets.only(top: 2.0),
                 child: Text(
                   hourString,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.timeText,
+                    color: widget.isDark
+                        ? const Color(0xFF94A3B8)
+                        : AppColors.timeText,
                   ),
                 ),
               );
             }),
           ),
 
-          // Badge màu đỏ tươi nổi bật hiển thị giờ hiện tại (18:00) nếu đang ở tuần hôm nay
           if (widget.controller.tuanDangXemChuaHomNay &&
               redLineTop >= 0 &&
               redLineTop <= totalHours * ScheduleController.hourHeight)
@@ -291,32 +313,31 @@ class _WeeklyGridWidgetState extends State<WeeklyGridWidget> {
     );
   }
 
-  /// Vẽ các đường kẻ lưới ngang và dọc với tông ấm nhẹ nhàng
+  /// Vẽ các đường kẻ lưới ngang và dọc
   Widget _buildGridLines(int totalHours) {
+    final Color gridColor = widget.isDark ? const Color(0xFF334155) : const Color(0xFFEADBDB);
+
     return Stack(
       children: [
-        // Các đường ngang mỗi giờ
         Column(
           children: List.generate(totalHours, (index) {
             return Container(
               height: ScheduleController.hourHeight,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: Color(0xFFEADBDB), width: 1.0),
+                  top: BorderSide(color: gridColor, width: 1.0),
                 ),
               ),
             );
           }),
         ),
-
-        // Các đường dọc chia 7 cột
         Row(
           children: List.generate(7, (index) {
             return Container(
               width: dayColumnWidth,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
-                  left: BorderSide(color: Color(0xFFEADBDB), width: 1.0),
+                  left: BorderSide(color: gridColor, width: 1.0),
                 ),
               ),
             );
@@ -338,7 +359,7 @@ class _WeeklyGridWidgetState extends State<WeeklyGridWidget> {
     return Container(
       width: dayColumnWidth,
       height: totalGridHeight,
-      color: isToday ? AppColors.sageGreen.withValues(alpha: 0.035) : Colors.transparent,
+      color: isToday ? AppColors.sageGreen.withValues(alpha: widget.isDark ? 0.08 : 0.035) : Colors.transparent,
       child: Stack(
         children: events.map((congViec) {
           final double top = widget.controller.calculateTopPosition(congViec.thoiGianBatDau);
@@ -363,6 +384,11 @@ class _WeeklyGridWidgetState extends State<WeeklyGridWidget> {
                   onDelete: (id) => widget.controller.xoaCongViec(id),
                   onSaveBatch: (batch) => widget.controller.luuChuoiCongViec(batch),
                   onDeleteSeries: (maChuoi) => widget.controller.xoaChuoiCongViec(maChuoi),
+                  onUpdateSeries: (maChuoi, mau, batch) => widget.controller.capNhatChuoiCongViec(
+                    maChuoiLap: maChuoi,
+                    mau: mau,
+                    danhSachMoiNeuDoiLich: batch,
+                  ),
                 );
               },
             ),

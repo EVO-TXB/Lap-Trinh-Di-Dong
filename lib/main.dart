@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'core/bo_nho/bo_nho_dich_vu.dart';
 import 'core/mang/api_client.dart';
 import 'core/constants/app_colors.dart';
+import 'core/constants/app_themes.dart';
 import 'core/thong_bao/dich_vu_thong_bao.dart';
 import 'features/xac_thuc/providers/auth_controller.dart';
 import 'features/xac_thuc/repositories/auth_repository_impl.dart';
@@ -56,18 +57,19 @@ class TimassApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    SettingsController? settings;
+    try {
+      settings = context.watch<SettingsController>();
+    } catch (_) {
+      settings = null;
+    }
+
     return MaterialApp(
       title: 'Timass - Quản lý Lịch trình & Thời gian',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        primaryColor: AppColors.sageGreen,
-        scaffoldBackgroundColor: AppColors.headerBackgroundStart,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.sageGreen,
-          primary: AppColors.sageGreen,
-        ),
-      ),
+      theme: AppThemes.lightTheme,
+      darkTheme: AppThemes.darkTheme,
+      themeMode: settings?.themeMode ?? ThemeMode.light,
       home: home ?? const AuthGate(),
     );
   }

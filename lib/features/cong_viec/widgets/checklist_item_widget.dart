@@ -9,16 +9,21 @@ import '../models/cong_viec_model.dart';
 /// - Tên công việc: Chữ gạch ngang & mờ đi khi đã hoàn thành
 /// - Dòng phụ: Khung giờ (HH:mm - HH:mm) và Địa điểm ( | Phòng học/Online)
 /// - Badge phân loại bên phải: Tag "Chủ động" (nền xanh chữ xanh đậm) hoặc "Bị động" (nền cam chữ cam đậm)
+/// - Hỗ trợ Dark Mode và Đa ngôn ngữ (Tiếng Việt / English)
 class ChecklistItemWidget extends StatelessWidget {
   final CongViecModel congViec;
   final ValueChanged<int> onToggle;
   final VoidCallback? onTap;
+  final bool isDark;
+  final String ngonNgu;
 
   const ChecklistItemWidget({
     super.key,
     required this.congViec,
     required this.onToggle,
     this.onTap,
+    this.isDark = false,
+    this.ngonNgu = 'Tiếng Việt',
   });
 
   @override
@@ -56,12 +61,12 @@ class ChecklistItemWidget extends StatelessWidget {
                       fontSize: 16.5,
                       fontWeight: FontWeight.w700,
                       color: daHoanThanh
-                          ? const Color(0xFF6B7280) // Mờ đi khi đã hoàn thành
-                          : AppColors.darkNavy,
+                          ? (isDark ? const Color(0xFF64748B) : const Color(0xFF6B7280))
+                          : (isDark ? const Color(0xFFF1F5F9) : AppColors.darkNavy),
                       decoration: daHoanThanh
                           ? TextDecoration.lineThrough
                           : TextDecoration.none,
-                      decorationColor: const Color(0xFF6B7280),
+                      decorationColor: isDark ? const Color(0xFF64748B) : const Color(0xFF6B7280),
                       decorationThickness: 1.8,
                       height: 1.25,
                     ),
@@ -72,10 +77,10 @@ class ChecklistItemWidget extends StatelessWidget {
                   // Dòng phụ: Giờ thực hiện & Địa điểm
                   Text(
                     thoiGianText,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF4B5563),
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF4B5563),
                       height: 1.2,
                     ),
                   ),
@@ -105,7 +110,9 @@ class ChecklistItemWidget extends StatelessWidget {
         shape: BoxShape.circle,
         color: isChecked ? AppColors.sageGreen : Colors.transparent,
         border: Border.all(
-          color: isChecked ? AppColors.sageGreen : const Color(0xFFCBD5E1),
+          color: isChecked
+              ? AppColors.sageGreen
+              : (isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1)),
           width: 2.0,
         ),
       ),
@@ -137,17 +144,19 @@ class ChecklistItemWidget extends StatelessWidget {
 
   /// Xác định nhãn phân loại (Chủ động / Bị động)
   String? _layNhanPhanLoai(CongViecModel cv) {
-    // 1. Kiểm tra ghi chú tường minh được gán từ mock hoặc người dùng
-    if (cv.ghiChu != null && cv.ghiChu!.trim() == 'Chủ động') {
-      return 'Chủ động';
+    final bool isEnglish = ngonNgu == 'English';
+    final String activeLabel = isEnglish ? 'Active' : 'Chủ động';
+    final String passiveLabel = isEnglish ? 'Passive' : 'Bị động';
+
+    if (cv.ghiChu != null && (cv.ghiChu!.trim() == 'Chủ động' || cv.ghiChu!.trim() == 'Active')) {
+      return activeLabel;
     }
-    if (cv.ghiChu != null && cv.ghiChu!.trim() == 'Bị động') {
-      return 'Bị động';
+    if (cv.ghiChu != null && (cv.ghiChu!.trim() == 'Bị động' || cv.ghiChu!.trim() == 'Passive')) {
+      return passiveLabel;
     }
 
-    // 2. Kiểm tra cờ laThietYeu hoặc loaiSuKien
     if (cv.laThietYeu || cv.loaiSuKien == 'BI_DONG') {
-      return 'Bị động';
+      return passiveLabel;
     }
 
     return null;
@@ -155,15 +164,15 @@ class ChecklistItemWidget extends StatelessWidget {
 
   /// Badge phân loại theo phong cách pill pastel
   Widget _buildBadgeTag(String tag) {
-    final bool isChuDong = tag == 'Chủ động';
+    final bool isChuDong = tag == 'Chủ động' || tag == 'Active';
 
-    final Color bgColor = isChuDong
-        ? const Color(0xFFD8EAFF) // Xanh pastel
-        : const Color(0xFFFFE2CC); // Cam đào pastel
+    final Color bgColor = isDark
+        ? (isChuDong ? const Color(0xFF1E3A8A) : const Color(0xFF7C2D12))
+        : (isChuDong ? const Color(0xFFD8EAFF) : const Color(0xFFFFE2CC));
 
-    final Color textColor = isChuDong
-        ? const Color(0xFF1E40AF) // Xanh dương đậm
-        : const Color(0xFFC2410C); // Cam gạch đậm
+    final Color textColor = isDark
+        ? (isChuDong ? const Color(0xFF93C5FD) : const Color(0xFFFDBA74))
+        : (isChuDong ? const Color(0xFF1E40AF) : const Color(0xFFC2410C));
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
@@ -183,4 +192,3 @@ class ChecklistItemWidget extends StatelessWidget {
     );
   }
 }
-

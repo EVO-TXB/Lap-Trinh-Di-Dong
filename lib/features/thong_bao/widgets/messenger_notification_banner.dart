@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../cai_dat/controllers/settings_controller.dart';
 import '../../cong_viec/models/cong_viec_model.dart';
 
 /// Thông báo dạng Banner trượt từ đỉnh màn hình phong cách Messenger / iOS
@@ -117,6 +119,19 @@ class _MessengerNotificationBannerState extends State<MessengerNotificationBanne
 
   @override
   Widget build(BuildContext context) {
+    SettingsController? settings;
+    try {
+      settings = context.watch<SettingsController>();
+    } catch (_) {
+      settings = null;
+    }
+    final String timeStr = _dinhDangGio(widget.congViec.thoiGianBatDau);
+    final String startsAtStr = settings?.tr('starts_at', params: {'time': timeStr}) ?? 'Bắt đầu lúc $timeStr';
+    final String locStr = (widget.congViec.diaDiem ?? '').isNotEmpty
+        ? (settings?.tr('at_location', params: {'loc': widget.congViec.diaDiem!}) ?? ' tại ${widget.congViec.diaDiem}')
+        : '';
+    final String subtitleText = '$startsAtStr$locStr';
+
     final mediaQuery = MediaQuery.of(context);
     final topPadding = mediaQuery.padding.top;
     final screenWidth = mediaQuery.size.width;
@@ -218,8 +233,8 @@ class _MessengerNotificationBannerState extends State<MessengerNotificationBanne
                                   color: Color(0xFF475569),
                                 ),
                               ),
-                              const Text(
-                                ' • NHẮC NHỞ',
+                              Text(
+                                settings?.tr('reminder_tag') ?? ' • NHẮC NHỞ',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
@@ -227,8 +242,8 @@ class _MessengerNotificationBannerState extends State<MessengerNotificationBanne
                                 ),
                               ),
                               const Spacer(),
-                              const Text(
-                                'Vừa xong',
+                              Text(
+                                settings?.tr('just_now') ?? 'Vừa xong',
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: Color(0xFF94A3B8),
@@ -299,9 +314,7 @@ class _MessengerNotificationBannerState extends State<MessengerNotificationBanne
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      (widget.congViec.diaDiem ?? '').isNotEmpty
-                                          ? 'Bắt đầu lúc ${_dinhDangGio(widget.congViec.thoiGianBatDau)} tại ${widget.congViec.diaDiem}'
-                                          : 'Bắt đầu lúc ${_dinhDangGio(widget.congViec.thoiGianBatDau)} - Sắp diễn ra',
+                                      subtitleText,
                                       style: const TextStyle(
                                         fontSize: 13,
                                         color: Color(0xFF64748B),
@@ -338,8 +351,8 @@ class _MessengerNotificationBannerState extends State<MessengerNotificationBanne
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 ),
                                 icon: const Icon(Icons.snooze_rounded, size: 15),
-                                label: const Text(
-                                  'Hoãn 5p',
+                                label: Text(
+                                  settings?.tr('snooze_5m') ?? 'Hoãn 5p',
                                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                                 ),
                               ),
@@ -363,8 +376,8 @@ class _MessengerNotificationBannerState extends State<MessengerNotificationBanne
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 ),
                                 icon: const Icon(Icons.arrow_forward_rounded, size: 15),
-                                label: const Text(
-                                  'Xem ngay',
+                                label: Text(
+                                  settings?.tr('view_now_btn') ?? 'Xem ngay',
                                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                                 ),
                               ),

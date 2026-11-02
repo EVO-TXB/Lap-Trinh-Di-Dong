@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 
 /// Thanh điều hướng thời gian: bổ sung hiển thị ngày hôm nay bên cạnh Tháng Năm (Tuần 42), nút < >, nút "Hôm nay"
+/// Hỗ trợ Dark Mode và Đa ngôn ngữ
 class TimeNavigationWidget extends StatelessWidget {
   final String tieuDe;
   final String? chuoiNgay;
   final VoidCallback onTuanTruoc;
   final VoidCallback onTuanSau;
   final VoidCallback onHomNay;
+  final bool isDark;
+  final String? nhanHomNay;
 
   const TimeNavigationWidget({
     super.key,
@@ -16,6 +19,8 @@ class TimeNavigationWidget extends StatelessWidget {
     required this.onTuanTruoc,
     required this.onTuanSau,
     required this.onHomNay,
+    this.isDark = false,
+    this.nhanHomNay,
   });
 
   @override
@@ -28,10 +33,10 @@ class TimeNavigationWidget extends StatelessWidget {
           Expanded(
             child: Text(
               tieuDe,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
-                color: AppColors.darkNavy,
+                color: isDark ? Colors.white : AppColors.darkNavy,
                 letterSpacing: -0.3,
               ),
               overflow: TextOverflow.ellipsis,
@@ -63,9 +68,12 @@ class TimeNavigationWidget extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFCBD5E1), width: 1),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                    width: 1,
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.03),
@@ -74,12 +82,12 @@ class TimeNavigationWidget extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Text(
-                  'Hôm nay',
+                child: Text(
+                  nhanHomNay ?? 'Hôm nay',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textDark,
+                    color: isDark ? const Color(0xFFF1F5F9) : AppColors.textDark,
                   ),
                 ),
               ),
@@ -98,13 +106,29 @@ class TimeNavigationWidget extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(6),
-        child: Padding(
-          padding: const EdgeInsets.all(4.0),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 3,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
           child: Icon(
             icon,
-            size: 26,
-            color: AppColors.darkNavy,
+            size: 20,
+            color: isDark ? Colors.white : AppColors.textDark,
           ),
         ),
       ),
