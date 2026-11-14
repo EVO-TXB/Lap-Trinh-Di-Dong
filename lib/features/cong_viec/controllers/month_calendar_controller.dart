@@ -27,12 +27,18 @@ class MonthCalendarController extends ChangeNotifier {
   Map<String, List<CongViecModel>> _suKienTheoNgay = {};
   bool _isLoading = false;
 
-  MonthCalendarController({required IEventRepository eventRepository})
-      : _eventRepository = eventRepository {
-    // Mặc định khởi tạo Tháng 10 năm 2026 và chọn ngày 13/10/2026
-    _thangHienTai = DateTime(2026, 10, 1);
-    _ngayDangChon = DateTime(2026, 10, 13);
-    _ngayHomNay = DateTime(2026, 10, 13);
+  MonthCalendarController({
+    required IEventRepository eventRepository,
+    DateTime? ngayKhoiTao,
+  })  : _eventRepository = eventRepository {
+    // Luôn đồng bộ với thời gian thực trên thiết bị DateTime.now()
+    final DateTime now = DateTime.now();
+    _ngayHomNay = DateTime(now.year, now.month, now.day);
+
+    // Mặc định khởi tạo theo ngày được chỉ định hoặc ngày hôm nay thực tế
+    final DateTime target = ngayKhoiTao ?? _ngayHomNay;
+    _thangHienTai = DateTime(target.year, target.month, 1);
+    _ngayDangChon = DateTime(target.year, target.month, target.day);
 
     loadEventsForMonth(_thangHienTai.year, _thangHienTai.month);
   }
@@ -175,8 +181,10 @@ class MonthCalendarController extends ChangeNotifier {
     loadEventsForMonth(_thangHienTai.year, _thangHienTai.month);
   }
 
-  /// Nhảy về ngày hôm nay
+  /// Nhảy về ngày hôm nay theo thời gian thực tế
   void chuyenDenHomNay() {
+    final DateTime now = DateTime.now();
+    _ngayHomNay = DateTime(now.year, now.month, now.day);
     _thangHienTai = DateTime(_ngayHomNay.year, _ngayHomNay.month, 1);
     _ngayDangChon = _ngayHomNay;
     loadEventsForMonth(_thangHienTai.year, _thangHienTai.month);

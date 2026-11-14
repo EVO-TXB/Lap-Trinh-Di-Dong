@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timass/features/cong_viec/controllers/month_calendar_controller.dart';
 import 'package:timass/features/cong_viec/models/cong_viec_model.dart';
 import 'package:timass/features/cong_viec/repositories/mock_event_repository.dart';
@@ -14,8 +15,12 @@ void main() {
     late MonthCalendarController controller;
 
     setUp(() {
+      SharedPreferences.setMockInitialValues({});
       repository = MockEventRepository();
-      controller = MonthCalendarController(eventRepository: repository);
+      controller = MonthCalendarController(
+        eventRepository: repository,
+        ngayKhoiTao: DateTime(2026, 10, 13),
+      );
     });
 
     test('Tao ma tran lich thang - kiem tra so o va ngay dau thang', () {
@@ -69,7 +74,7 @@ void main() {
       expect(controller.thangHienTai.month, 10);
 
       controller.chuyenDenHomNay();
-      expect(controller.thangHienTai.month, 10);
+      expect(controller.thangHienTai.month, controller.ngayHomNay.month);
       expect(controller.ngayDangChon, controller.ngayHomNay);
     });
 
@@ -92,6 +97,9 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
+      final DateTime now = DateTime.now();
+      final String thangHienTaiStr = 'Tháng ${now.month}, ${now.year}';
+
       await tester.pumpWidget(const TimassApp(home: LichTuanScreen()));
       await tester.pumpAndSettle();
 
@@ -106,7 +114,7 @@ void main() {
 
       // Kiểm tra Giao diện Lịch Tháng đã được render
       expect(find.byType(MonthCalendarView), findsOneWidget);
-      expect(find.text('Tháng 10, 2026'), findsOneWidget);
+      expect(find.text(thangHienTaiStr), findsOneWidget);
       expect(find.text('T2'), findsOneWidget);
       expect(find.text('CN'), findsOneWidget);
 
@@ -126,6 +134,12 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
+      final DateTime now = DateTime.now();
+      final String thangHienTaiStr = 'Tháng ${now.month}, ${now.year}';
+      final int nextM = now.month == 12 ? 1 : now.month + 1;
+      final int nextY = now.month == 12 ? now.year + 1 : now.year;
+      final String thangSauStr = 'Tháng $nextM, $nextY';
+
       await tester.pumpWidget(const TimassApp(home: LichTuanScreen()));
       await tester.pumpAndSettle();
 
@@ -133,7 +147,7 @@ void main() {
       await tester.tap(find.text('Lịch tháng'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Tháng 10, 2026'), findsOneWidget);
+      expect(find.text(thangHienTaiStr), findsOneWidget);
 
       // Bấm nút chuyển sang tháng sau > bên trong MonthlyCalendarGrid
       final Finder nextMonthBtn = find.descendant(
@@ -144,9 +158,9 @@ void main() {
       await tester.tap(nextMonthBtn);
       await tester.pumpAndSettle();
 
-      expect(find.text('Tháng 11, 2026'), findsOneWidget);
+      expect(find.text(thangSauStr), findsOneWidget);
 
-      // Bấm nút "Hôm nay" bên trong MonthlyCalendarGrid để quay về tháng 10
+      // Bấm nút "Hôm nay" bên trong MonthlyCalendarGrid để quay về tháng hiện tại
       final Finder todayBtn = find.descendant(
         of: find.byType(MonthlyCalendarGrid),
         matching: find.text('Hôm nay'),
@@ -155,7 +169,7 @@ void main() {
       await tester.tap(todayBtn);
       await tester.pumpAndSettle();
 
-      expect(find.text('Tháng 10, 2026'), findsOneWidget);
+      expect(find.text(thangHienTaiStr), findsOneWidget);
     });
   });
 }

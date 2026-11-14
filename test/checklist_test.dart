@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timass/features/cong_viec/controllers/checklist_controller.dart';
 import 'package:timass/features/cong_viec/models/cong_viec_model.dart';
 import 'package:timass/features/cong_viec/repositories/mock_event_repository.dart';
@@ -11,6 +12,7 @@ void main() {
     late ChecklistController controller;
 
     setUp(() async {
+      SharedPreferences.setMockInitialValues({});
       MockEventRepository().datLaiDuLieuMau();
       controller = ChecklistController(
         eventRepository: MockEventRepository(),

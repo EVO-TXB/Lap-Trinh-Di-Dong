@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/cong_viec_model.dart';
+import '../repositories/mock_event_repository.dart';
 import '../utils/batch_event_helper.dart';
 import '../utils/time_conflict_checker.dart';
 
@@ -253,7 +254,7 @@ class EventFormController extends ChangeNotifier {
     final DateTime now = DateTime.now();
     return CongViecModel(
       id: congViecGoc?.id ?? 0,
-      maNguoiDung: congViecGoc?.maNguoiDung ?? 1,
+      maNguoiDung: congViecGoc?.maNguoiDung ?? MockEventRepository.currentUserId,
       maChuoiLap: _coLapLai ? congViecGoc?.maChuoiLap : null,
       tenCongViec: _tenCongViec.trim(),
       thoiGianBatDau: thoiGianBatDauHopNhat,

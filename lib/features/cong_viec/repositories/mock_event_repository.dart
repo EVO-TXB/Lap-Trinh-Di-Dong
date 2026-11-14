@@ -1,17 +1,104 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/cong_viec_model.dart';
 import 'i_event_repository.dart';
 
-/// Triển khai Mock Repository với dữ liệu mẫu phong phú phục vụ cả Lịch tuần và Lịch tháng
+/// Triển khai Mock Repository hỗ trợ đa tài khoản và lưu trữ bền vững (SharedPreferences)
 class MockEventRepository implements IEventRepository {
-  static final MockEventRepository _instance = MockEventRepository._internal();
-  factory MockEventRepository() => _instance;
+  static final Map<int, MockEventRepository> _instances = {};
+  static int currentUserId = 1;
 
+  final int userId;
   final List<CongViecModel> _danhSachMock = [];
+  bool _daKhoiTao = false;
 
-  List<CongViecModel> get tatCaCongViecHienCo => List.unmodifiable(_danhSachMock);
+  factory MockEventRepository({int? userId}) {
+    final int uid = userId ?? currentUserId;
+    return _instances.putIfAbsent(uid, () => MockEventRepository._internal(uid));
+  }
 
-  MockEventRepository._internal() {
-    _khoiTaoDuLieuMau();
+  List<CongViecModel> get tatCaCongViecHienCo =>
+      List.unmodifiable(_danhSachMock.where((e) => e.maNguoiDung == userId));
+
+  MockEventRepository._internal(this.userId) {
+    if (userId == 1) {
+      _khoiTaoDuLieuMau();
+    }
+  }
+
+  SharedPreferences? _cachedPrefs;
+
+  Future<SharedPreferences?> _getPrefsSafely() async {
+    if (_cachedPrefs != null) return _cachedPrefs;
+    try {
+      _cachedPrefs = await SharedPreferences.getInstance();
+      return _cachedPrefs;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Đảm bảo dữ liệu của tài khoản đã được nạp từ SharedPreferences
+  Future<void> _damBaoDaKhoiTao() async {
+    if (_daKhoiTao) return;
+    _daKhoiTao = true;
+
+    try {
+      final prefs = await _getPrefsSafely();
+      if (prefs == null) {
+        if (_danhSachMock.isEmpty && userId == 1) {
+          _khoiTaoDuLieuMau();
+        }
+        return;
+      }
+
+      final String key = 'timass_events_user_$userId';
+      final String? jsonStr = prefs.getString(key);
+
+      if (jsonStr != null && jsonStr.isNotEmpty) {
+        final List<dynamic> list = jsonDecode(jsonStr);
+        _danhSachMock.clear();
+        for (final item in list) {
+          try {
+            _danhSachMock.add(CongViecModel.fromJson(Map<String, dynamic>.from(item as Map)));
+          } catch (e) {
+            debugPrint('Lỗi parse công việc: $e');
+          }
+        }
+      } else {
+        // Chưa có dữ liệu lưu trong SharedPreferences cho user này
+        _danhSachMock.clear();
+        if (userId == 1) {
+          // Tài khoản mặc định hệ thống: nạp dữ liệu mẫu ban đầu
+          _khoiTaoDuLieuMau();
+          await _luuVaoPrefs();
+        } else {
+          // Tài khoản mới tạo: khởi tạo danh sách rỗng hoàn toàn
+          await _luuVaoPrefs();
+        }
+      }
+    } catch (e) {
+      debugPrint('Lỗi khởi tạo MockEventRepository: $e');
+      if (_danhSachMock.isEmpty && userId == 1) {
+        _khoiTaoDuLieuMau();
+      }
+    }
+  }
+
+  /// Lưu danh sách công việc của tài khoản hiện tại vào SharedPreferences
+  Future<void> _luuVaoPrefs() async {
+    try {
+      final prefs = await _getPrefsSafely();
+      if (prefs == null) return;
+      final String key = 'timass_events_user_$userId';
+      final String jsonStr = jsonEncode(
+        _danhSachMock.where((e) => e.maNguoiDung == userId).map((e) => e.toJson()).toList(),
+      );
+      await prefs.setString(key, jsonStr);
+    } catch (e) {
+      debugPrint('Lỗi lưu danh sách công việc vào SharedPreferences: $e');
+    }
   }
 
   void _khoiTaoDuLieuMau() {
@@ -402,16 +489,59 @@ class MockEventRepository implements IEventRepository {
         ngayTao: now,
       ),
     ]);
+
+    // Bổ sung dữ liệu sự kiện cho các ngày lân cận trong tháng thực tế để lịch tháng hiển thị phong phú
+    final List<int> offsetDays = [-5, -3, -1, 1, 2, 4, 6];
+    for (final offset in offsetDays) {
+      final DateTime targetDate = now.add(Duration(days: offset));
+      _danhSachMock.addAll([
+        CongViecModel(
+          id: ++currentMaxId,
+          maNguoiDung: 1,
+          tenCongViec: offset.isEven ? 'Học Lập trình Di động' : 'Họp nhóm đồ án Timass',
+          thoiGianBatDau: DateTime(targetDate.year, targetDate.month, targetDate.day, 8, 30),
+          thoiGianKetThuc: DateTime(targetDate.year, targetDate.month, targetDate.day, 11, 0),
+          diaDiem: 'Phòng Lab 3',
+          laThietYeu: false,
+          daHoanThanh: offset < 0,
+          ngayTao: now,
+        ),
+        CongViecModel(
+          id: ++currentMaxId,
+          maNguoiDung: 1,
+          tenCongViec: 'Ăn trưa & Nghỉ ngơi',
+          thoiGianBatDau: DateTime(targetDate.year, targetDate.month, targetDate.day, 12, 0),
+          thoiGianKetThuc: DateTime(targetDate.year, targetDate.month, targetDate.day, 13, 0),
+          diaDiem: 'Căn-tin',
+          laThietYeu: true,
+          daHoanThanh: offset < 0,
+          ngayTao: now,
+        ),
+        CongViecModel(
+          id: ++currentMaxId,
+          maNguoiDung: 1,
+          tenCongViec: 'Luyện tập & Thực hành code',
+          thoiGianBatDau: DateTime(targetDate.year, targetDate.month, targetDate.day, 15, 0),
+          thoiGianKetThuc: DateTime(targetDate.year, targetDate.month, targetDate.day, 17, 0),
+          diaDiem: 'Thư viện',
+          laThietYeu: false,
+          daHoanThanh: false,
+          ngayTao: now,
+        ),
+      ]);
+    }
   }
 
   @override
   Future<List<CongViecModel>> getDanhSachCongViecTheoTuan({
     required DateTime ngayDauTuan,
   }) async {
+    await _damBaoDaKhoiTao();
     await Future.delayed(const Duration(milliseconds: 60));
     final DateTime ngayCuoiTuan = ngayDauTuan.add(const Duration(days: 7));
     return _danhSachMock.where((congViec) {
-      return congViec.thoiGianBatDau.isAfter(ngayDauTuan.subtract(const Duration(seconds: 1))) &&
+      return congViec.maNguoiDung == userId &&
+             congViec.thoiGianBatDau.isAfter(ngayDauTuan.subtract(const Duration(seconds: 1))) &&
              congViec.thoiGianBatDau.isBefore(ngayCuoiTuan);
     }).toList();
   }
@@ -421,38 +551,50 @@ class MockEventRepository implements IEventRepository {
     required int nam,
     required int thang,
   }) async {
+    await _damBaoDaKhoiTao();
     await Future.delayed(const Duration(milliseconds: 60));
     return _danhSachMock.where((congViec) {
-      return congViec.thoiGianBatDau.year == nam && congViec.thoiGianBatDau.month == thang;
+      return congViec.maNguoiDung == userId &&
+             congViec.thoiGianBatDau.year == nam &&
+             congViec.thoiGianBatDau.month == thang;
     }).toList();
   }
 
   @override
   Future<CongViecModel> createCongViec(CongViecModel congViec) async {
+    await _damBaoDaKhoiTao();
     await Future.delayed(const Duration(milliseconds: 60));
-    final int newId = _danhSachMock.isEmpty ? 1 : _danhSachMock.map((e) => e.id).reduce((a, b) => a > b ? a : b) + 1;
-    final CongViecModel newItem = congViec.copyWith(id: newId);
+    final int newId = _danhSachMock.isEmpty
+        ? (userId * 1000 + 1)
+        : _danhSachMock.map((e) => e.id).reduce((a, b) => a > b ? a : b) + 1;
+    final CongViecModel newItem = congViec.copyWith(id: newId, maNguoiDung: userId);
     _danhSachMock.add(newItem);
+    await _luuVaoPrefs();
     return newItem;
   }
 
   @override
   Future<CongViecModel> updateCongViec(CongViecModel congViec) async {
+    await _damBaoDaKhoiTao();
     await Future.delayed(const Duration(milliseconds: 60));
+    final CongViecModel itemToSave = congViec.copyWith(maNguoiDung: userId);
     final int index = _danhSachMock.indexWhere((e) => e.id == congViec.id);
     if (index != -1) {
-      _danhSachMock[index] = congViec;
-      return congViec;
+      _danhSachMock[index] = itemToSave;
+    } else {
+      _danhSachMock.add(itemToSave);
     }
-    _danhSachMock.add(congViec);
-    return congViec;
+    await _luuVaoPrefs();
+    return itemToSave;
   }
 
   @override
   Future<List<CongViecModel>> getDanhSachCongViecTheoNgay(DateTime ngay) async {
+    await _damBaoDaKhoiTao();
     await Future.delayed(const Duration(milliseconds: 60));
     return _danhSachMock.where((congViec) {
-      return congViec.thoiGianBatDau.year == ngay.year &&
+      return congViec.maNguoiDung == userId &&
+             congViec.thoiGianBatDau.year == ngay.year &&
              congViec.thoiGianBatDau.month == ngay.month &&
              congViec.thoiGianBatDau.day == ngay.day;
     }).toList();
@@ -460,31 +602,37 @@ class MockEventRepository implements IEventRepository {
 
   @override
   Future<List<CongViecModel>> getAllCongViec() async {
+    await _damBaoDaKhoiTao();
     await Future.delayed(const Duration(milliseconds: 60));
-    return List.from(_danhSachMock);
+    return _danhSachMock.where((e) => e.maNguoiDung == userId).toList();
   }
 
   @override
   Future<List<CongViecModel>> createDanhSachCongViec(List<CongViecModel> danhSach) async {
+    await _damBaoDaKhoiTao();
     await Future.delayed(const Duration(milliseconds: 60));
-    int currentMaxId = _danhSachMock.isEmpty ? 0 : _danhSachMock.map((e) => e.id).reduce((a, b) => a > b ? a : b);
+    int currentMaxId = _danhSachMock.isEmpty
+        ? (userId * 1000)
+        : _danhSachMock.map((e) => e.id).reduce((a, b) => a > b ? a : b);
     final List<CongViecModel> ketQua = [];
     for (final cv in danhSach) {
       currentMaxId++;
-      final CongViecModel newItem = cv.copyWith(id: currentMaxId);
+      final CongViecModel newItem = cv.copyWith(id: currentMaxId, maNguoiDung: userId);
       _danhSachMock.add(newItem);
       ketQua.add(newItem);
     }
+    await _luuVaoPrefs();
     return ketQua;
   }
 
   @override
   Future<List<CongViecModel>> updateChuoiCongViec(String maChuoiLap, CongViecModel mauCapNhat) async {
+    await _damBaoDaKhoiTao();
     await Future.delayed(const Duration(milliseconds: 60));
     final List<CongViecModel> ketQua = [];
     for (int i = 0; i < _danhSachMock.length; i++) {
       final cv = _danhSachMock[i];
-      if (cv.maChuoiLap == maChuoiLap || cv.maQuyTacLap?.toString() == maChuoiLap) {
+      if ((cv.maChuoiLap == maChuoiLap || cv.maQuyTacLap?.toString() == maChuoiLap) && cv.maNguoiDung == userId) {
         final DateTime batDauMoi = DateTime(
           cv.thoiGianBatDau.year,
           cv.thoiGianBatDau.month,
@@ -509,33 +657,55 @@ class MockEventRepository implements IEventRepository {
           nhacNhoTruocPhut: mauCapNhat.nhacNhoTruocPhut,
           thoiGianBatDau: batDauMoi,
           thoiGianKetThuc: ketThucMoi,
+          maNguoiDung: userId,
         );
         _danhSachMock[i] = updated;
         ketQua.add(updated);
       }
     }
+    await _luuVaoPrefs();
     return ketQua;
   }
 
   @override
   Future<bool> deleteCongViec(int id) async {
+    await _damBaoDaKhoiTao();
     await Future.delayed(const Duration(milliseconds: 60));
     final int initialLength = _danhSachMock.length;
-    _danhSachMock.removeWhere((e) => e.id == id);
-    return _danhSachMock.length < initialLength;
+    _danhSachMock.removeWhere((e) => e.id == id && e.maNguoiDung == userId);
+    final bool removed = _danhSachMock.length < initialLength;
+    if (removed) {
+      await _luuVaoPrefs();
+    }
+    return removed;
   }
 
   @override
   Future<bool> deleteChuoiCongViec(String maChuoiLap) async {
+    await _damBaoDaKhoiTao();
     await Future.delayed(const Duration(milliseconds: 60));
     final int initialLength = _danhSachMock.length;
-    _danhSachMock.removeWhere((e) => e.maChuoiLap == maChuoiLap || e.maQuyTacLap?.toString() == maChuoiLap);
-    return _danhSachMock.length < initialLength;
+    _danhSachMock.removeWhere((e) =>
+        (e.maChuoiLap == maChuoiLap || e.maQuyTacLap?.toString() == maChuoiLap) &&
+        e.maNguoiDung == userId);
+    final bool removed = _danhSachMock.length < initialLength;
+    if (removed) {
+      await _luuVaoPrefs();
+    }
+    return removed;
   }
 
   /// Đặt lại toàn bộ dữ liệu mẫu ban đầu (dùng cho unit test & reset)
-  void datLaiDuLieuMau() {
+  Future<void> datLaiDuLieuMau() async {
     _danhSachMock.clear();
-    _khoiTaoDuLieuMau();
+    if (userId == 1) {
+      _khoiTaoDuLieuMau();
+    }
+    await _luuVaoPrefs();
+  }
+
+  /// Xóa toàn bộ bộ nhớ đệm đa tài khoản
+  static void xoaBoNhoDem() {
+    _instances.clear();
   }
 }

@@ -31,10 +31,12 @@ class ScheduleController extends ChangeNotifier {
   Timer? _realtimeTimer;
   final DateTime? _ngayKhoiTaoTuyChon;
   bool _batDauChuNhat = false;
+  final int maNguoiDung;
 
   ScheduleController({
     required IEventRepository eventRepository,
     DateTime? ngayKhoiTao,
+    this.maNguoiDung = 1,
   })  : _eventRepository = eventRepository,
         _ngayKhoiTaoTuyChon = ngayKhoiTao {
     // Truy cập thời gian thực trên thiết bị DateTime.now()
@@ -139,7 +141,7 @@ class ScheduleController extends ChangeNotifier {
     final now = _thoiGianThuc;
     final CongViecModel sample = CongViecModel(
       id: 9999,
-      maNguoiDung: 1,
+      maNguoiDung: maNguoiDung,
       tenCongViec: 'Lập trình Web nâng cao',
       thoiGianBatDau: now.add(const Duration(minutes: 15)),
       thoiGianKetThuc: now.add(const Duration(minutes: 105)),
@@ -254,17 +256,10 @@ class ScheduleController extends ChangeNotifier {
     }).toList();
   }
 
-  int get tongSoViecHomNay {
-    final int count = danhSachViecHomNay.length;
-    // Nếu ngày hôm nay chưa có đủ dữ liệu, dùng số cố định 8 như UI mẫu
-    return count >= 8 ? count : 8;
-  }
+  int get tongSoViecHomNay => danhSachViecHomNay.length;
 
-  int get soViecDaXongHomNay {
-    final int count = danhSachViecHomNay.where((e) => e.trangThaiHoanThanhHienThi).length;
-    // Khớp con số 5 việc như UI mẫu
-    return count >= 5 ? count : 5;
-  }
+  int get soViecDaXongHomNay =>
+      danhSachViecHomNay.where((e) => e.trangThaiHoanThanhHienThi).length;
 
   double get tiLeHoanThanh {
     if (tongSoViecHomNay == 0) return 0.0;

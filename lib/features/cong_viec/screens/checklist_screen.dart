@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../cai_dat/controllers/settings_controller.dart';
+import '../../xac_thuc/providers/auth_controller.dart';
 import '../../../core/thong_bao/dich_vu_thong_bao.dart';
 import '../../thong_bao/widgets/hop_thoai_thong_bao.dart';
 import '../controllers/checklist_controller.dart';
 import '../models/cong_viec_model.dart';
 import '../repositories/i_event_repository.dart';
+import '../repositories/mock_event_repository.dart';
 import '../widgets/checklist_item_widget.dart';
 import '../widgets/event_detail_dialog.dart';
 import '../widgets/timass_logo_widget.dart';
@@ -16,19 +18,31 @@ import '../widgets/timass_logo_widget.dart';
 class ChecklistScreen extends StatelessWidget {
   final DateTime? initialDate;
   final IEventRepository? eventRepository;
+  final int? userId;
 
   const ChecklistScreen({
     super.key,
     this.initialDate,
     this.eventRepository,
+    this.userId,
   });
 
   @override
   Widget build(BuildContext context) {
+    int currentUserId = userId ?? 1;
+    try {
+      final auth = context.watch<AuthController>();
+      if (auth.nguoiDungHienTai?.id != null) {
+        currentUserId = auth.nguoiDungHienTai!.id!;
+      }
+    } catch (_) {}
+
     return ChangeNotifierProvider<ChecklistController>(
+      key: ValueKey('ChecklistController_user_$currentUserId'),
       create: (_) => ChecklistController(
-        eventRepository: eventRepository,
+        eventRepository: eventRepository ?? MockEventRepository(userId: currentUserId),
         ngayChon: initialDate,
+        userId: currentUserId,
       ),
       child: const _ChecklistScreenView(),
     );
@@ -45,7 +59,7 @@ class _ChecklistScreenView extends StatelessWidget {
     final DateTime targetDate = controller.ngayHienTai;
     final CongViecModel newEvent = CongViecModel(
       id: 0,
-      maNguoiDung: 1,
+      maNguoiDung: controller.userId,
       tenCongViec: '',
       thoiGianBatDau: DateTime(
         targetDate.year,

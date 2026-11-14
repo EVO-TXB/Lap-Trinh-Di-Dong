@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timass/core/thong_bao/dich_vu_thong_bao.dart';
 import 'package:timass/features/xac_thuc/services/auth_validation.dart';
 import 'package:timass/features/cong_viec/models/cong_viec_model.dart';
@@ -7,6 +8,10 @@ import 'package:timass/features/cong_viec/screens/lich_tuan_screen.dart';
 import 'package:timass/features/thong_bao/widgets/popup_nhac_nho_dialog.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   group('AuthValidation Tests', () {
     test('Validate so dien thoai Viet Nam hop le', () {
       expect(AuthValidation.validateSoDienThoai('0987654321'), isNull);
