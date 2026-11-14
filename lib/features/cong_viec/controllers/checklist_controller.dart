@@ -10,6 +10,7 @@ class ChecklistController extends ChangeNotifier {
   final IEventRepository _eventRepository;
 
   DateTime _ngayHienTai;
+  final int userId;
   List<CongViecModel> _danhSachCongViec = [];
   bool _isLoading = false;
   String? _thongBaoLoi;
@@ -17,10 +18,12 @@ class ChecklistController extends ChangeNotifier {
   ChecklistController({
     IEventRepository? eventRepository,
     DateTime? ngayChon,
-  })  : _eventRepository = eventRepository ?? MockEventRepository(),
+    this.userId = 1,
+  })  : _eventRepository = eventRepository ?? MockEventRepository(userId: userId),
         _ngayHienTai = ngayChon ?? DateTime(2026, 10, 21) {
-    // Khởi tạo ngay dữ liệu mẫu để UI & Unit test không bị trễ khung hình
-    _danhSachCongViec = _taoDuLieuMauNgay21Thang10();
+    if (userId == 1 && _ngayHienTai.year == 2026 && _ngayHienTai.month == 10 && _ngayHienTai.day == 21) {
+      _danhSachCongViec = _taoDuLieuMauNgay21Thang10();
+    }
     loadDanhSachCongViec();
   }
 
@@ -91,12 +94,19 @@ class ChecklistController extends ChangeNotifier {
         _danhSachCongViec = congViecNgay;
         _sapXepDanhSach();
       } else {
-        // Tự tạo dữ liệu mẫu phong phú đúng theo ảnh mẫu `ui check list.png`
-        _danhSachCongViec = _taoDuLieuMauNgay21Thang10();
+        if (userId == 1 && _ngayHienTai.year == 2026 && _ngayHienTai.month == 10 && _ngayHienTai.day == 21) {
+          _danhSachCongViec = _taoDuLieuMauNgay21Thang10();
+        } else {
+          _danhSachCongViec = [];
+        }
       }
     } catch (e) {
       _thongBaoLoi = 'Lỗi nạp dữ liệu: $e';
-      _danhSachCongViec = _taoDuLieuMauNgay21Thang10();
+      if (userId == 1 && _ngayHienTai.year == 2026 && _ngayHienTai.month == 10 && _ngayHienTai.day == 21) {
+        _danhSachCongViec = _taoDuLieuMauNgay21Thang10();
+      } else {
+        _danhSachCongViec = [];
+      }
     } finally {
       _isLoading = false;
       notifyListeners();

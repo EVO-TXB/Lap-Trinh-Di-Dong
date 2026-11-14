@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timass/features/cong_viec/controllers/event_form_controller.dart';
 import 'package:timass/features/cong_viec/models/cong_viec_model.dart';
 import 'package:timass/features/cong_viec/utils/batch_event_helper.dart';
@@ -13,6 +14,10 @@ import 'package:timass/features/cong_viec/controllers/schedule_controller.dart';
 import 'package:timass/features/cong_viec/repositories/mock_event_repository.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   group('1. TimeConflictChecker Unit Tests (Thuật toán Trùng Lịch)', () {
     final DateTime targetDate = DateTime(2026, 10, 21);
 

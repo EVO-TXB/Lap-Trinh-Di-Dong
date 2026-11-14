@@ -9,6 +9,7 @@ import '../../thong_bao/widgets/messenger_notification_banner.dart';
 import '../../thong_bao/widgets/chat_head_bubble_widget.dart';
 import '../../cai_dat/controllers/settings_controller.dart';
 import '../../cai_dat/screens/cai_dat_screen.dart';
+import '../../xac_thuc/providers/auth_controller.dart';
 import '../controllers/schedule_controller.dart';
 import '../models/cong_viec_model.dart';
 import '../repositories/mock_event_repository.dart';
@@ -29,8 +30,20 @@ class LichTuanScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    int currentUserId = 1;
+    try {
+      final authController = context.watch<AuthController>();
+      currentUserId = authController.nguoiDungHienTai?.id ?? 1;
+    } catch (_) {}
+
+    MockEventRepository.currentUserId = currentUserId;
+
     return ChangeNotifierProvider<ScheduleController>(
-      create: (_) => ScheduleController(eventRepository: MockEventRepository()),
+      key: ValueKey('ScheduleController_user_$currentUserId'),
+      create: (_) => ScheduleController(
+        eventRepository: MockEventRepository(userId: currentUserId),
+        maNguoiDung: currentUserId,
+      ),
       child: const _LichTuanView(),
     );
   }
@@ -179,7 +192,7 @@ class _LichTuanViewState extends State<_LichTuanView> {
     final DateTime now = controller.ngayHienTai;
     final CongViecModel newEvent = CongViecModel(
       id: 0,
-      maNguoiDung: 1,
+      maNguoiDung: controller.maNguoiDung,
       tenCongViec: '',
       thoiGianBatDau: DateTime(now.year, now.month, now.day, 9, 0),
       thoiGianKetThuc: DateTime(now.year, now.month, now.day, 10, 30),
@@ -265,17 +278,18 @@ class _LichTuanViewState extends State<_LichTuanView> {
                       coThongBaoMoi: DichVuThongBao.instance.lichSuThongBao.isNotEmpty,
                     ),
 
-                    // B. Thanh điều hướng thời gian: 1 dòng duy nhất "13/10/2026 (Tuần 42)", < >, "Hôm nay"
-                    TimeNavigationWidget(
-                      tieuDe: controller.layTieuDeTuan(
-                        nhanTuan: settings?.tr('week_label') ?? 'Tuần',
+                    // B. Thanh điều hướng thời gian: chỉ hiển thị cho Lịch tuần
+                    if (controller.cheDoXem == 0)
+                      TimeNavigationWidget(
+                        tieuDe: controller.layTieuDeTuan(
+                          nhanTuan: settings?.tr('week_label') ?? 'Tuần',
+                        ),
+                        isDark: isDark,
+                        nhanHomNay: settings?.tr('today'),
+                        onTuanTruoc: controller.chuyenTuanTruoc,
+                        onTuanSau: controller.chuyenTuanSau,
+                        onHomNay: controller.chuyenDenHomNay,
                       ),
-                      isDark: isDark,
-                      nhanHomNay: settings?.tr('today'),
-                      onTuanTruoc: controller.chuyenTuanTruoc,
-                      onTuanSau: controller.chuyenTuanSau,
-                      onHomNay: controller.chuyenDenHomNay,
-                    ),
 
                     // C. Bộ chuyển đổi View: Segmented control [ Lịch tuần | Lịch tháng ]
                     ViewSwitcherWidget(
@@ -308,8 +322,9 @@ class _LichTuanViewState extends State<_LichTuanView> {
                         },
                         child: controller.cheDoXem == 0
                             ? _buildWeeklyView(context, controller, isDark: isDark, settings: settings)
-                            : const MonthCalendarView(
-                                key: ValueKey('MonthCalendarView'),
+                            : MonthCalendarView(
+                                key: ValueKey('MonthCalendarView_${controller.ngayHienTai.year}_${controller.ngayHienTai.month}'),
+                                ngayKhoiTao: controller.ngayHienTai,
                               ),
                       ),
                     ),
@@ -387,6 +402,8 @@ class _LichTuanViewState extends State<_LichTuanView> {
               MaterialPageRoute(
                 builder: (_) => ChecklistScreen(
                   initialDate: controller.ngayHienTai,
+                  userId: controller.maNguoiDung,
+                  eventRepository: MockEventRepository(userId: controller.maNguoiDung),
                 ),
               ),
             );

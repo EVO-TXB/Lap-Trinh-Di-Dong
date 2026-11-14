@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'core/bo_nho/bo_nho_dich_vu.dart';
 import 'core/mang/api_client.dart';
@@ -14,6 +16,10 @@ import 'features/cai_dat/controllers/settings_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Khởi tạo định dạng ngày tháng đa ngôn ngữ cho intl
+  await initializeDateFormatting('vi_VN', null);
+  await initializeDateFormatting('en_US', null);
 
   // Khởi tạo các dịch vụ hệ thống
   final boNhoDichVu = await BoNhoDichVu.getInstance();
@@ -64,12 +70,28 @@ class TimassApp extends StatelessWidget {
       settings = null;
     }
 
+    final Locale appLocale = settings?.ngonNgu == 'English'
+        ? const Locale('en', 'US')
+        : const Locale('vi', 'VN');
+
     return MaterialApp(
       title: 'Timass - Quản lý Lịch trình & Thời gian',
       debugShowCheckedModeBanner: false,
       theme: AppThemes.lightTheme,
       darkTheme: AppThemes.darkTheme,
       themeMode: settings?.themeMode ?? ThemeMode.light,
+      locale: appLocale,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('vi', 'VN'),
+        Locale('vi', ''),
+        Locale('en', 'US'),
+        Locale('en', ''),
+      ],
       home: home ?? const AuthGate(),
     );
   }

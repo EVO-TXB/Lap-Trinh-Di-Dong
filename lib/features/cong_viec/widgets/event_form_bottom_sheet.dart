@@ -117,18 +117,23 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
     SettingsController? settings,
   }) async {
     final bool isDark = settings?.isDarkMode ?? false;
+    final Locale pickerLocale = settings?.ngonNgu == 'English'
+        ? const Locale('en', 'US')
+        : const Locale('vi', 'VN');
+
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: controller.ngayThucHien,
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
+      locale: pickerLocale,
       helpText: settings?.tr('select_date_title') ?? 'CHỌN NGÀY THỰC HIỆN',
       cancelText: settings?.tr('picker_cancel') ?? 'HỦY',
       confirmText: settings?.tr('picker_select') ?? 'CHỌN',
       builder: (context, child) {
         return Theme(
           data: isDark
-              ? ThemeData.dark().copyWith(
+              ? Theme.of(context).copyWith(
                   colorScheme: const ColorScheme.dark(
                     primary: AppColors.sageGreen,
                     onPrimary: Colors.white,
@@ -161,6 +166,9 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
     SettingsController? settings,
   }) async {
     final bool isDark = settings?.isDarkMode ?? false;
+    final Locale pickerLocale = settings?.ngonNgu == 'English'
+        ? const Locale('en', 'US')
+        : const Locale('vi', 'VN');
     final TimeOfDay initial = isBatDau ? controller.gioBatDau : controller.gioKetThuc;
     final String defaultHelp = isBatDau ? 'CHỌN GIỜ BẮT ĐẦU' : 'CHỌN GIỜ KẾT THÚC';
     final String helpKey = isBatDau ? 'select_start_time_title' : 'select_end_time_title';
@@ -174,7 +182,7 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
       builder: (context, child) {
         return Theme(
           data: isDark
-              ? ThemeData.dark().copyWith(
+              ? Theme.of(context).copyWith(
                   colorScheme: const ColorScheme.dark(
                     primary: AppColors.sageGreen,
                     onPrimary: Colors.white,
@@ -211,6 +219,10 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
     SettingsController? settings,
   }) async {
     final bool isDark = settings?.isDarkMode ?? false;
+    final Locale pickerLocale = settings?.ngonNgu == 'English'
+        ? const Locale('en', 'US')
+        : const Locale('vi', 'VN');
+
     final DateTime initial = isTuNgay ? controller.ngayBatDauLap : controller.ngayKetThucLap;
     final String defaultHelp = isTuNgay ? 'CHỌN NGÀY BẮT ĐẦU LẶP' : 'CHỌN NGÀY KẾT THÚC LẶP';
     final String helpKey = isTuNgay ? 'select_repeat_start_date' : 'select_repeat_end_date';
@@ -220,13 +232,14 @@ class _EventFormBottomSheetState extends State<EventFormBottomSheet> {
       initialDate: initial,
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
+      locale: pickerLocale,
       helpText: settings?.tr(helpKey) ?? defaultHelp,
       cancelText: settings?.tr('picker_cancel') ?? 'HỦY',
       confirmText: settings?.tr('picker_select') ?? 'CHỌN',
       builder: (context, child) {
         return Theme(
           data: isDark
-              ? ThemeData.dark().copyWith(
+              ? Theme.of(context).copyWith(
                   colorScheme: const ColorScheme.dark(
                     primary: AppColors.sageGreen,
                     onPrimary: Colors.white,
