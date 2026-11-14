@@ -17,6 +17,7 @@ class ThongBaoController extends ChangeNotifier {
   final BoNhoDichVu? _boNhoDichVu;
 
   StreamSubscription<CongViecModel>? _thongBaoSubscription;
+  StreamSubscription<void>? _streamCapNhatSubscription;
 
   // Công việc hiện tại đang được hiển thị popup
   CongViecModel? _congViecHienTai;
@@ -47,6 +48,10 @@ class ThongBaoController extends ChangeNotifier {
     _thongBaoSubscription = _dichVuThongBao.streamThongBao.listen((congViec) {
       _congViecHienTai = congViec;
       _soLuongChuaDoc++;
+      notifyListeners();
+    });
+
+    _streamCapNhatSubscription = _dichVuThongBao.streamCapNhat.listen((_) {
       notifyListeners();
     });
   }
@@ -126,6 +131,7 @@ class ThongBaoController extends ChangeNotifier {
   @override
   void dispose() {
     _thongBaoSubscription?.cancel();
+    _streamCapNhatSubscription?.cancel();
     super.dispose();
   }
 }

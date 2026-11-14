@@ -163,6 +163,7 @@ class ScheduleController extends ChangeNotifier {
       _danhSachCongViec = await _eventRepository.getDanhSachCongViecTheoTuan(
         ngayDauTuan: _ngayDauTuan,
       );
+      _dichVuThongBao.dongBoLichThongBao(_danhSachCongViec);
       // Quét tự động ngay sau khi nạp xong dữ liệu
       await quetThongBaoVaTuDongHoa();
     } catch (e) {
@@ -298,6 +299,11 @@ class ScheduleController extends ChangeNotifier {
   Future<void> capNhatTrangThaiHoanThanh(CongViecModel congViec, bool daHoanThanh) async {
     final CongViecModel updated = congViec.copyWith(daHoanThanh: daHoanThanh);
     await _eventRepository.updateCongViec(updated);
+    if (daHoanThanh) {
+      _dichVuThongBao.xoaCongViec(congViec.id);
+    } else {
+      _dichVuThongBao.capNhatCongViec(updated);
+    }
     final int index = _danhSachCongViec.indexWhere((e) => e.id == congViec.id);
     if (index != -1) {
       _danhSachCongViec[index] = updated;
@@ -307,25 +313,32 @@ class ScheduleController extends ChangeNotifier {
 
   Future<void> luuCongViec(CongViecModel congViec) async {
     if (congViec.id <= 0) {
-      await _eventRepository.createCongViec(congViec);
+      final created = await _eventRepository.createCongViec(congViec);
+      _dichVuThongBao.capNhatCongViec(created);
     } else {
       await _eventRepository.updateCongViec(congViec);
+      _dichVuThongBao.capNhatCongViec(congViec);
     }
     await loadDanhSachCongViec();
   }
 
   Future<void> xoaCongViec(int id) async {
     await _eventRepository.deleteCongViec(id);
+    _dichVuThongBao.xoaCongViec(id);
     await loadDanhSachCongViec();
   }
 
   Future<void> luuChuoiCongViec(List<CongViecModel> batch) async {
     await _eventRepository.createDanhSachCongViec(batch);
+    for (final cv in batch) {
+      _dichVuThongBao.capNhatCongViec(cv);
+    }
     await loadDanhSachCongViec();
   }
 
   Future<void> xoaChuoiCongViec(String maChuoiLap) async {
     await _eventRepository.deleteChuoiCongViec(maChuoiLap);
+    _dichVuThongBao.xoaChuoiCongViec(maChuoiLap);
     await loadDanhSachCongViec();
   }
 
@@ -338,8 +351,10 @@ class ScheduleController extends ChangeNotifier {
     if (danhSachMoiNeuDoiLich != null && danhSachMoiNeuDoiLich.isNotEmpty) {
       await _eventRepository.deleteChuoiCongViec(maChuoiLap);
       await _eventRepository.createDanhSachCongViec(danhSachMoiNeuDoiLich);
+      _dichVuThongBao.capNhatChuoiCongViec(maChuoiLap, mau, danhSachMoiNeuDoiLich);
     } else {
-      await _eventRepository.updateChuoiCongViec(maChuoiLap, mau);
+      final updatedList = await _eventRepository.updateChuoiCongViec(maChuoiLap, mau);
+      _dichVuThongBao.capNhatChuoiCongViec(maChuoiLap, mau, updatedList);
     }
     await loadDanhSachCongViec();
   }

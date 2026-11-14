@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../features/cong_viec/models/cong_viec_model.dart';
 import '../bo_nho/bo_nho_dich_vu.dart';
 import 'cai_dat_thong_bao_model.dart';
+import 'thong_bao_he_thong.dart';
 
 /// Dịch vụ quét thông báo nhắc nhở & tác vụ tự động chạy ngầm (Notification Scanner & Background Automation)
 /// Tuân thủ quy chuẩn AI_rules.md: đặt tên camelCase tiếng Việt, độc lập, không hardcode.
@@ -24,6 +25,11 @@ class DichVuThongBao {
   final StreamController<CongViecModel> _streamThongBao =
       StreamController<CongViecModel>.broadcast();
   Stream<CongViecModel> get streamThongBao => _streamThongBao.stream;
+
+  // Stream phát sự kiện khi thông báo bị thay đổi/sửa/xóa để UI cập nhật
+  final StreamController<void> _streamCapNhat =
+      StreamController<void>.broadcast();
+  Stream<void> get streamCapNhat => _streamCapNhat.stream;
 
   // Bộ nhớ đệm danh sách sự kiện đã thông báo và danh sách hẹn báo lại (Snooze)
   final Set<int> _danhSachIdDaThongBao = {};
@@ -47,6 +53,7 @@ class DichVuThongBao {
         debugPrint('Lỗi nạp cài đặt thông báo: $e');
       }
     }
+    await ThongBaoHeThong.instance.khoiTao();
   }
 
   /// Cập nhật cài đặt thông báo
@@ -54,6 +61,9 @@ class DichVuThongBao {
     _caiDat = caiDatMoi;
     if (boNho != null) {
       await boNho.luuChuoi(_khoaCaiDat, _caiDat.toJson());
+    }
+    if (!caiDatMoi.batThongBao) {
+      ThongBaoHeThong.instance.huyTatCaThongBao();
     }
   }
 
@@ -108,13 +118,28 @@ class DichVuThongBao {
           _danhSachIdDaThongBao.add(cv.id);
           _danhSachSnooze.remove(cv.id);
 
-          // Thêm vào lịch sử thông báo
-          if (!_lichSuThongBao.any((e) => e.id == cv.id)) {
+          // Thêm/Cập nhật vào lịch sử thông báo
+          final int existingIdx = _lichSuThongBao.indexWhere((e) => e.id == cv.id);
+          if (existingIdx != -1) {
+            _lichSuThongBao[existingIdx] = cv;
+          } else {
             _lichSuThongBao.insert(0, cv);
           }
 
           // Phát ra Stream để UI hiển thị Popup PopupNhacNhoDialog
           _streamThongBao.add(cv);
+
+          // Phát thông báo hệ thống ngoài màn hình khóa và thanh trạng thái kèm âm thanh chuông
+          final String gioStr =
+              '${cv.thoiGianBatDau.hour.toString().padLeft(2, '0')}:${cv.thoiGianBatDau.minute.toString().padLeft(2, '0')}';
+          final String diaDiemStr = cv.diaDiem != null && cv.diaDiem!.trim().isNotEmpty
+              ? ' tại ${cv.diaDiem}'
+              : '';
+          ThongBaoHeThong.instance.hienThiThongBaoNgay(
+            id: cv.id,
+            tieuDe: 'Nhắc nhở: ${cv.tenCongViec}',
+            noiDung: 'Bắt đầu lúc $gioStr$diaDiemStr',
+          );
 
           // Kích hoạt callback nghiệp vụ
           onPhatThongBao?.call(cv);
@@ -134,6 +159,98 @@ class DichVuThongBao {
             onTuDongHoanThanh?.call(cv);
           }
         }
+      }
+    }
+  }
+
+  /// Cập nhật thông tin công việc trong hệ thống thông báo khi người dùng sửa công việc
+  void capNhatCongViec(CongViecModel congViecMoi) {
+    // 1. Cập nhật trong lịch sử thông báo nếu công việc này đã từng có mặt
+    final int index = _lichSuThongBao.indexWhere((e) => e.id == congViecMoi.id);
+    if (index != -1) {
+      _lichSuThongBao[index] = congViecMoi;
+    }
+
+    // 2. Reset trạng thái đã thông báo để hệ thống quét lại theo giờ và tên mới
+    _danhSachIdDaThongBao.remove(congViecMoi.id);
+    _danhSachSnooze.remove(congViecMoi.id);
+
+    // 3. Hủy thông báo cũ trên màn hình khóa/thanh trạng thái
+    ThongBaoHeThong.instance.huyThongBao(congViecMoi.id);
+
+    // 4. Lên lịch thông báo hệ thống mới nếu công việc chưa hoàn thành và ở tương lai
+    if (!congViecMoi.daHoanThanh && _caiDat.batThongBao) {
+      lenLichThongBaoChoCongViec(congViecMoi);
+    }
+
+    _streamCapNhat.add(null);
+  }
+
+  /// Xóa công việc khỏi hệ thống thông báo khi người dùng xóa công việc
+  void xoaCongViec(int congViecId) {
+    _lichSuThongBao.removeWhere((e) => e.id == congViecId);
+    _danhSachIdDaThongBao.remove(congViecId);
+    _danhSachSnooze.remove(congViecId);
+    ThongBaoHeThong.instance.huyThongBao(congViecId);
+    _streamCapNhat.add(null);
+  }
+
+  /// Cập nhật toàn bộ chuỗi công việc lặp lại
+  void capNhatChuoiCongViec(
+    String maChuoiLap,
+    CongViecModel mauMoi,
+    List<CongViecModel>? danhSachMoi,
+  ) {
+    _lichSuThongBao.removeWhere((e) => e.maChuoiLap == maChuoiLap);
+    if (danhSachMoi != null) {
+      for (final cv in danhSachMoi) {
+        capNhatCongViec(cv);
+      }
+    }
+    _streamCapNhat.add(null);
+  }
+
+  /// Xóa chuỗi công việc lặp lại khỏi thông báo
+  void xoaChuoiCongViec(String maChuoiLap) {
+    final List<CongViecModel> canXoa =
+        _lichSuThongBao.where((e) => e.maChuoiLap == maChuoiLap).toList();
+    for (final e in canXoa) {
+      xoaCongViec(e.id);
+    }
+    _streamCapNhat.add(null);
+  }
+
+  /// Lên lịch thông báo ngoài màn hình khóa cho một công việc sắp tới
+  void lenLichThongBaoChoCongViec(CongViecModel cv) {
+    if (cv.daHoanThanh || !_caiDat.batThongBao) return;
+
+    final int phutBaoTruoc =
+        cv.nhacNhoTruocPhut > 0 ? cv.nhacNhoTruocPhut : _caiDat.nhacTruocPhut;
+    final DateTime thoiGianBao =
+        cv.thoiGianBatDau.subtract(Duration(minutes: phutBaoTruoc));
+
+    if (thoiGianBao.isAfter(DateTime.now())) {
+      final String gioStr =
+          '${cv.thoiGianBatDau.hour.toString().padLeft(2, '0')}:${cv.thoiGianBatDau.minute.toString().padLeft(2, '0')}';
+      final String diaDiemStr =
+          cv.diaDiem != null && cv.diaDiem!.trim().isNotEmpty
+              ? ' tại ${cv.diaDiem}'
+              : '';
+      ThongBaoHeThong.instance.henGioThongBao(
+        id: cv.id,
+        tieuDe: 'Nhắc nhở: ${cv.tenCongViec}',
+        noiDung: 'Bắt đầu lúc $gioStr$diaDiemStr (còn $phutBaoTruoc phút)',
+        thoiGianThongBao: thoiGianBao,
+      );
+    }
+  }
+
+  /// Đồng bộ và lên lịch toàn bộ danh sách công việc sắp tới
+  void dongBoLichThongBao(List<CongViecModel> danhSach) {
+    if (!_caiDat.batThongBao) return;
+    for (final cv in danhSach) {
+      if (!cv.daHoanThanh && cv.thoiGianBatDau.isAfter(DateTime.now())) {
+        lenLichThongBaoChoCongViec(cv);
       }
     }
   }
@@ -159,6 +276,7 @@ class DichVuThongBao {
     _danhSachIdDaThongBao.clear();
     _danhSachSnooze.clear();
     _lichSuThongBao.clear();
+    ThongBaoHeThong.instance.huyTatCaThongBao();
   }
 
   /// Kích hoạt thông báo thủ công (phục vụ người dùng bấm kiểm thử hoặc bấm vào chuông)
@@ -169,5 +287,6 @@ class DichVuThongBao {
   void dispose() {
     _automationTimer?.cancel();
     _streamThongBao.close();
+    _streamCapNhat.close();
   }
 }

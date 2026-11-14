@@ -13,6 +13,8 @@ import 'package:timass/features/thong_bao/controllers/thong_bao_controller.dart'
 import 'package:timass/features/thong_bao/widgets/hop_thoai_thong_bao.dart';
 import 'package:timass/features/thong_bao/widgets/messenger_notification_banner.dart';
 import 'package:timass/features/thong_bao/widgets/popup_nhac_nho_dialog.dart';
+import 'package:timass/core/thong_bao/dich_vu_thong_bao.dart';
+import 'package:timass/core/thong_bao/thong_bao_he_thong.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -583,6 +585,91 @@ void main() {
 
       // Error message in English
       expect(find.text('Please enter a task or subject name.'), findsOneWidget);
+    });
+  });
+
+  group('System & Event Change Notification Tests (Cap nhat & Phat ngoai man hinh khoa)', () {
+    test('DichVuThongBao cap nhat thong bao ngay khi doi thong tin cong viec', () async {
+      final dichVu = DichVuThongBao.instance;
+      final thongBaoHeThong = ThongBaoHeThong.instance;
+
+      final now = DateTime.now();
+      final congViecGoc = CongViecModel(
+        id: 999,
+        maNguoiDung: 1,
+        tenCongViec: 'Thuc hanh mang may tinh',
+        thoiGianBatDau: now.add(const Duration(hours: 2)),
+        thoiGianKetThuc: now.add(const Duration(hours: 3)),
+        diaDiem: 'Phong LAB 1',
+        laThietYeu: false,
+        daHoanThanh: false,
+        nhacNhoTruocPhut: 15,
+        ngayTao: now,
+      );
+
+      // 1. Len lich ban dau
+      dichVu.capNhatCongViec(congViecGoc);
+      expect(thongBaoHeThong.danhSachHenGio.containsKey(999), isTrue);
+      expect(thongBaoHeThong.danhSachHenGio[999]!['tieuDe'], contains('Thuc hanh mang may tinh'));
+
+      // 2. Nguoi dung sua cong viec: Doi ten sang 'Kiem tra Cuoi Ky' va doi dia diem
+      final congViecDaSua = congViecGoc.copyWith(
+        tenCongViec: 'Kiem tra Cuoi Ky Mang May Tinh',
+        diaDiem: 'Giang duong A1',
+        thoiGianBatDau: now.add(const Duration(hours: 4)),
+        thoiGianKetThuc: now.add(const Duration(hours: 5)),
+      );
+
+      dichVu.capNhatCongViec(congViecDaSua);
+
+      // Thong bao phai lap tuc duoc cap nhat theo ten va gio moi!
+      expect(thongBaoHeThong.danhSachHenGio.containsKey(999), isTrue);
+      expect(thongBaoHeThong.danhSachHenGio[999]!['tieuDe'], contains('Kiem tra Cuoi Ky Mang May Tinh'));
+      expect(thongBaoHeThong.danhSachHenGio[999]!['noiDung'], contains('Giang duong A1'));
+
+      // 3. Nguoi dung xoa cong viec: Thong bao phai bi huy ngay lap tuc
+      dichVu.xoaCongViec(999);
+      expect(thongBaoHeThong.danhSachHenGio.containsKey(999), isFalse);
+    });
+
+    test('Lich su thong bao duoc lam moi khi cong viec da thong bao bi sua', () async {
+      final dichVu = DichVuThongBao.instance;
+      dichVu.datLaiBoNhoThongBao();
+
+      final now = DateTime.now();
+      final congViec = CongViecModel(
+        id: 888,
+        maNguoiDung: 1,
+        tenCongViec: 'Hop nhom Mobile',
+        thoiGianBatDau: now.add(const Duration(minutes: 5)),
+        thoiGianKetThuc: now.add(const Duration(minutes: 60)),
+        diaDiem: 'Phong B102',
+        laThietYeu: false,
+        daHoanThanh: false,
+        nhacNhoTruocPhut: 15,
+        ngayTao: now,
+      );
+
+      // Phat thong bao
+      await dichVu.quetThongBaoVaTuDongHoa(
+        danhSachCongViec: [congViec],
+        thoiGianHienTai: now,
+      );
+
+      expect(dichVu.daPhatThongBao(888), isTrue);
+      expect(dichVu.lichSuThongBao.first.tenCongViec, equals('Hop nhom Mobile'));
+
+      // Nguoi dung sua ten va gio
+      final congViecMoi = congViec.copyWith(
+        tenCongViec: 'Hop Hoi Dong Danh Gia',
+        diaDiem: 'Phong Hoi Thao',
+      );
+      dichVu.capNhatCongViec(congViecMoi);
+
+      // Lich su phai duoc cap nhat ngay lap tuc
+      expect(dichVu.lichSuThongBao.first.tenCongViec, equals('Hop Hoi Dong Danh Gia'));
+      // Danh sach da thong bao duoc reset de quet lai cho gio moi
+      expect(dichVu.daPhatThongBao(888), isFalse);
     });
   });
 }

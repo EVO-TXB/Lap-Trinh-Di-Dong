@@ -33,11 +33,27 @@ class PopupNhacNhoDialog extends StatelessWidget {
     VoidCallback? onDong,
     bool animate = true,
   }) {
-    return showDialog(
+    return showGeneralDialog(
       context: context,
       barrierDismissible: true,
-      barrierColor: Colors.black.withOpacity(0.55),
-      builder: (dialogContext) => PopupNhacNhoDialog(
+      barrierLabel: 'DismissNotification',
+      barrierColor: Colors.black.withValues(alpha: 0.55),
+      transitionDuration: const Duration(milliseconds: 320),
+      transitionBuilder: (context, anim1, anim2, child) {
+        final curve = CurvedAnimation(
+          parent: anim1,
+          curve: Curves.easeOutBack,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return ScaleTransition(
+          scale: Tween<double>(begin: 0.85, end: 1.0).animate(curve),
+          child: FadeTransition(
+            opacity: anim1,
+            child: child,
+          ),
+        );
+      },
+      pageBuilder: (dialogContext, _, __) => PopupNhacNhoDialog(
         congViec: congViec,
         animate: animate,
         onXemChiTiet: () {
@@ -91,7 +107,7 @@ class PopupNhacNhoDialog extends StatelessWidget {
             borderRadius: BorderRadius.circular(24.0),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.18),
+                color: Colors.black.withValues(alpha: 0.18),
                 blurRadius: 28,
                 offset: const Offset(0, 10),
               ),
@@ -116,7 +132,7 @@ class PopupNhacNhoDialog extends StatelessWidget {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.red.withOpacity(0.15),
+                            color: Colors.red.withValues(alpha: 0.15),
                             blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
